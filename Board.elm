@@ -19,7 +19,7 @@ colorToString c = case c of
                     Red -> "red"
                     Blue -> "blue"
                     Green -> "green"
-                    yellow -> "yellow"
+                    Yellow -> "yellow"
 
 mkTile : Color -> Tile
 mkTile c = (c, Stationary)
