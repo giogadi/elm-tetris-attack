@@ -1,14 +1,17 @@
 module Board where
 
-boardRows = 4
+boardRows = 6
 boardColumns = 4
 
 type ContinuousPosition = Float
+type ContinuousSpeed = Float
 
 data Color = Red | Blue | Green | Yellow
 data State = Stationary |
              SwitchingLeft ContinuousPosition |
-             SwitchingRight ContinuousPosition
+             SwitchingRight ContinuousPosition |
+             Falling ContinuousPosition ContinuousSpeed |
+             Fell ContinuousSpeed
 type Tile = (Color, State)
 
 colorToString : Color -> String

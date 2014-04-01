@@ -22,11 +22,14 @@ tileScreenPosition : BoardPlacementInfo -> (Int,Int) -> State -> (Float, Float)
 tileScreenPosition { lowerLeftX, lowerLeftY, tileSize } (x,y) tileState =
   let halfSize = tileSize `div` 2
       offsetX = case tileState of
-                  Stationary -> 0
                   SwitchingLeft p -> tileSize - (truncate <| (smoothStep p)*(toFloat tileSize))
                   SwitchingRight p -> -tileSize + (truncate <| (smoothStep p)*(toFloat tileSize))
+                  _ -> 0
+      offsetY = case tileState of
+                  Falling p v -> tileSize - (truncate <| p*(toFloat tileSize))
+                  _ -> 0
   in  (toFloat <| lowerLeftX + halfSize + x * tileSize + offsetX,
-       toFloat <| lowerLeftY + halfSize + y * tileSize)
+       toFloat <| lowerLeftY + halfSize + y * tileSize + offsetY)
 
 formFromTile : BoardPlacementInfo -> (Int,Int) -> Tile -> Form
 formFromTile ({lowerLeftX, lowerLeftY, tileSize} as bpi) tileIdx (c,s) =
