@@ -47,8 +47,6 @@ moveCursorUp (currentX, currentY) =
     then (currentX, currentY)
     else (currentX, currentY + 1)
 
-data Action = None | CursorLeft | CursorRight | CursorDown | CursorUp | Swap
-
 onUp : Signal Bool -> Signal ()
 onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
 
@@ -62,47 +60,34 @@ onPressed = onUp . Keyboard.isDown
 onReleased : Keyboard.KeyCode -> Signal ()
 onReleased = onDown . Keyboard.isDown
 
---
--- Signal that is False until the given keycode is pressed, 
--- but then is only True for one "frame" before returning to False.
---
--- Note the ugly fps call...
-keyPressed : Keyboard.KeyCode -> Signal Bool
-keyPressed key = merge (sampleOn (onPressed key) (constant True)) (sampleOn (fps 60) (constant False))
+data Input = None |
+             CursorLeft |
+             CursorRight |
+             CursorDown |
+             CursorUp |
+             Swap |
+             NewTimeStep Time
 
-type KeyboardInputs = {left:Bool, right:Bool, down:Bool, up:Bool, space:Bool}
+keyPressed : Keyboard.KeyCode -> Input -> Signal Input
+keyPressed key action = merge (constant None) <| always action <~ onPressed key
 
-keyboardInputs : Signal KeyboardInputs
-keyboardInputs = KeyboardInputs <~ (keyPressed 37)
-                                 ~ (keyPressed 39)
-                                 ~ (keyPressed 40)
-                                 ~ (keyPressed 38)
-                                 ~ (keyPressed 32)
-
-action : KeyboardInputs -> Action
-action {left,right,down,up,space} = if | left && not right -> CursorLeft
-                                       | right && not left -> CursorRight
-                                       | up && not down -> CursorUp
-                                       | down && not up -> CursorDown
-                                       | space -> Swap
-                                       | otherwise -> None
-
-type Input = { action:Action, dt:Time }
-
-timeStep : Signal Time
-timeStep = inSeconds <~ fps 60
-
-input = sampleOn timeStep <| Input <~ (lift action keyboardInputs)
-                                    ~ timeStep
+input : Signal Input
+input = let keyPressInput = merges <| zipWith keyPressed
+                                        [37, 39, 40, 38, 32]
+                                        [CursorLeft, CursorRight, CursorDown, CursorUp, Swap]
+        in  merge keyPressInput <| NewTimeStep <~ fps 30
 
 stepGame : Input -> GameState -> GameState
-stepGame {action, dt} {board, cursorIdx} =
-  let newCursorIdx = case action of
+stepGame input {board, cursorIdx, dtOld} =
+  let newCursorIdx = case input of
                        CursorLeft -> moveCursorLeft cursorIdx
                        CursorRight -> moveCursorRight cursorIdx
                        CursorDown -> moveCursorDown cursorIdx
                        CursorUp -> moveCursorUp cursorIdx
                        _ -> cursorIdx
+      newTimeStep = case input of
+                      NewTimeStep dt -> dt
+                      _ -> dtOld
       --newBoard = updateBoard 
       newBoard = board
-  in  {board = newBoard, cursorIdx = newCursorIdx}
+  in  {board = newBoard, cursorIdx = newCursorIdx, dtOld = newTimeStep}

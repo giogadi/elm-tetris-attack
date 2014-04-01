@@ -23,7 +23,7 @@ mkTile c = (c, Stationary)
 
 type Board = [[Maybe Tile]]
 
-type GameState = { board:Board, cursorIdx:(Int,Int) }
+type GameState = { board:Board, cursorIdx:(Int,Int), dtOld:Time }
 
 mkEmptyColumn : [Maybe Tile]
 mkEmptyColumn = repeat boardRows Nothing

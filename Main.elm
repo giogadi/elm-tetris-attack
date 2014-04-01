@@ -9,4 +9,7 @@ mkTestBoard = [[Just (mkTile Red), Just (mkTile Blue), Just (mkTile Red), Just (
                [Just (mkTile Yellow), Nothing, Nothing, Nothing],
                [Just (mkTile Blue), Just (mkTile Yellow), Nothing, Nothing]]
 
-main = lift2 displayGame Window.dimensions (foldp stepGame {board=mkTestBoard, cursorIdx=(0,0)} input)
+mkInitialState : GameState
+mkInitialState = {board=mkTestBoard, cursorIdx=(0,0), dtOld=0}
+
+main = lift2 displayGame Window.dimensions (foldp stepGame mkInitialState input)
