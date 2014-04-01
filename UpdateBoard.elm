@@ -3,7 +3,7 @@ module UpdateBoard where
 import Board (..)
 import Keyboard
 
-switchingSpeed = 1.0
+switchingSpeed = 0.005
 
 updateTile : Time -> Tile -> Tile
 updateTile dt tile = case tile of
@@ -47,6 +47,18 @@ moveCursorUp (currentX, currentY) =
     then (currentX, currentY)
     else (currentX, currentY + 1)
 
+switchTileLeft : Tile -> Tile
+switchTileLeft (c, _) = (c, SwitchingLeft 0.0)
+
+switchTileRight : Tile -> Tile
+switchTileRight (c, _) = (c, SwitchingRight 0.0)
+
+swapTiles : Board -> (Int, Int) -> Board
+swapTiles b (x,y) = let left = liftMaybe switchTileRight <| getTileAt b (x,y)
+                        right = liftMaybe switchTileLeft <| getTileAt b (x+1,y)
+                        b1 = setTileAt b (x,y) right
+                    in  setTileAt b1 (x+1,y) left
+
 onUp : Signal Bool -> Signal ()
 onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
 
@@ -88,6 +100,8 @@ stepGame input {board, cursorIdx, dtOld} =
       newTimeStep = case input of
                       NewTimeStep dt -> dt
                       _ -> dtOld
-      --newBoard = updateBoard 
-      newBoard = board
+      swappedBoard = case input of
+                       Swap -> swapTiles board newCursorIdx
+                       _ -> board
+      newBoard = updateBoard newTimeStep swappedBoard
   in  {board = newBoard, cursorIdx = newCursorIdx, dtOld = newTimeStep}

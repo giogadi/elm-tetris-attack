@@ -14,24 +14,25 @@ getBoardPlacementInfo (w,h) = let heightRatio = 0.9
                                   llY = (-h `div` 2)
                               in  { lowerLeftX = llX, lowerLeftY = llY, tileSize = tSize }
 
-screenPositionFromIdx : BoardPlacementInfo -> (Int,Int) -> (Float, Float)
-screenPositionFromIdx { lowerLeftX, lowerLeftY, tileSize } (x,y) =
+tileScreenPosition : BoardPlacementInfo -> (Int,Int) -> State -> (Float, Float)
+tileScreenPosition { lowerLeftX, lowerLeftY, tileSize } (x,y) tileState =
   let halfSize = tileSize `div` 2
-  in  (toFloat <| lowerLeftX + halfSize + x * tileSize, toFloat <| lowerLeftY + halfSize + y * tileSize)
+      offsetX = case tileState of
+                  Stationary -> 0
+                  SwitchingLeft p -> truncate <| (toFloat tileSize) - p*(toFloat tileSize)
+                  SwitchingRight p -> truncate <| -(toFloat tileSize) + p*(toFloat tileSize)
+  in  (toFloat <| lowerLeftX + halfSize + x * tileSize + offsetX, toFloat <| lowerLeftY + halfSize + y * tileSize)
 
-formFromTile : BoardPlacementInfo -> Tile -> Form
-formFromTile {lowerLeftX, lowerLeftY, tileSize} (c,_) =
-  toForm . image tileSize tileSize <| colorToString c ++ ".bmp"
-
-moveFormFromIdx : BoardPlacementInfo -> (Int, Int) -> Form -> Form
-moveFormFromIdx bpi idx = move (screenPositionFromIdx bpi idx)
+formFromTile : BoardPlacementInfo -> (Int,Int) -> Tile -> Form
+formFromTile ({lowerLeftX, lowerLeftY, tileSize} as bpi) tileIdx (c,s) =
+  let tileImgForm = toForm . image tileSize tileSize <| colorToString c ++ ".bmp"
+  in move (tileScreenPosition bpi tileIdx s) tileImgForm
 
 formsFromBoard : BoardPlacementInfo -> Board -> [Form]
 formsFromBoard bpi b =
   let tileIdxs = generateBoardIndices b
-      placedForm (t, idx) =
-        (liftMaybe <| moveFormFromIdx bpi idx)  <| (liftMaybe <| formFromTile bpi) t
-  in  justs <| map placedForm tileIdxs
+      mkTileForm (t, idx) = liftMaybe (formFromTile bpi idx) t
+  in  justs <| map mkTileForm tileIdxs
 
 cursorPositionFromIdx : BoardPlacementInfo -> (Int,Int) -> (Float,Float)
 cursorPositionFromIdx {lowerLeftX, lowerLeftY, tileSize} (leftX, leftY) =

@@ -42,8 +42,18 @@ listAtIdx xs idx = case idx of
                      0 -> head xs
                      i -> listAtIdx (tail xs) (idx - 1)
 
+updateAtIdx : [a] -> Int -> a -> [a]
+updateAtIdx xs idx x =
+  let go (xh::xt) idx x proc = case idx of
+                                 0 -> proc ++ (x :: xt)
+                                 idx -> go xt (idx-1) x (proc ++ [xh])
+  in  go xs idx x []
+
 getTileAt : Board -> (Int, Int) -> Maybe Tile
 getTileAt b (x,y) = listAtIdx (listAtIdx b x) y
+
+setTileAt : Board -> (Int, Int) -> Maybe Tile -> Board
+setTileAt b (x,y) t = updateAtIdx b x <| updateAtIdx (listAtIdx b x) y t
 
 liftMaybe : (a -> b) -> Maybe a -> Maybe b
 liftMaybe f m = case m of
