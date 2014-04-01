@@ -3,7 +3,8 @@ module UpdateBoard where
 import Board (..)
 import Keyboard
 
-switchingSpeed = 0.005
+switchingTimeInSeconds = 0.25
+switchingSpeed = 1.0 / switchingTimeInSeconds
 
 updateTile : Time -> Tile -> Tile
 updateTile dt tile = case tile of
@@ -65,7 +66,7 @@ onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
 onDown : Signal Bool -> Signal ()
 onDown =  lift (\_ -> ()) . keepIf not False . dropRepeats
 
--- 
+--
 onPressed : Keyboard.KeyCode -> Signal ()
 onPressed = onUp . Keyboard.isDown
 
@@ -103,5 +104,5 @@ stepGame input {board, cursorIdx, dtOld} =
       swappedBoard = case input of
                        Swap -> swapTiles board newCursorIdx
                        _ -> board
-      newBoard = updateBoard newTimeStep swappedBoard
+      newBoard = updateBoard (inSeconds newTimeStep) swappedBoard
   in  {board = newBoard, cursorIdx = newCursorIdx, dtOld = newTimeStep}

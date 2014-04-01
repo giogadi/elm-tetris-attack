@@ -14,14 +14,19 @@ getBoardPlacementInfo (w,h) = let heightRatio = 0.9
                                   llY = (-h `div` 2)
                               in  { lowerLeftX = llX, lowerLeftY = llY, tileSize = tSize }
 
+-- [0,1] -> [0,1] with f'(0) = f'(1) = f''(0) = f''(1) = 0
+smoothStep : Time -> Time
+smoothStep t = 6*t^5 - 15*t^4 + 10*t^3
+
 tileScreenPosition : BoardPlacementInfo -> (Int,Int) -> State -> (Float, Float)
 tileScreenPosition { lowerLeftX, lowerLeftY, tileSize } (x,y) tileState =
   let halfSize = tileSize `div` 2
       offsetX = case tileState of
                   Stationary -> 0
-                  SwitchingLeft p -> truncate <| (toFloat tileSize) - p*(toFloat tileSize)
-                  SwitchingRight p -> truncate <| -(toFloat tileSize) + p*(toFloat tileSize)
-  in  (toFloat <| lowerLeftX + halfSize + x * tileSize + offsetX, toFloat <| lowerLeftY + halfSize + y * tileSize)
+                  SwitchingLeft p -> tileSize - (truncate <| (smoothStep p)*(toFloat tileSize))
+                  SwitchingRight p -> -tileSize + (truncate <| (smoothStep p)*(toFloat tileSize))
+  in  (toFloat <| lowerLeftX + halfSize + x * tileSize + offsetX,
+       toFloat <| lowerLeftY + halfSize + y * tileSize)
 
 formFromTile : BoardPlacementInfo -> (Int,Int) -> Tile -> Form
 formFromTile ({lowerLeftX, lowerLeftY, tileSize} as bpi) tileIdx (c,s) =
