@@ -25,4 +25,12 @@ mkTestBoardFalling = [[Just (mkTile Red), Just (mkTile Blue), Just (mkTile Red),
 mkInitialStateFalling : GameState
 mkInitialStateFalling = {board=mkTestBoardFalling, cursorIdx=(0,0), dtOld=0}
 
-main = lift2 displayGame Window.dimensions (foldp stepGame mkInitialStateFalling input)
+mkTestBoardMatch : Board
+mkTestBoardMatch = [[Just (mkTile Red), Just (mkTile Blue), Just (mkTile Blue), Just (mkTile Red), Just (mkTile Red), Just (mkTile Blue)],
+                    [Just (mkTile Blue), Just (mkTile Green), Nothing, Nothing, Nothing, Nothing],
+                    [Just (mkTile Red), Nothing, Nothing, Nothing, Nothing, Nothing],
+                    [Just (mkTile Red), Just (mkTile Yellow), Nothing, Nothing, Nothing, Nothing]]
+
+mkInitialStateMatching = {board=mkTestBoardMatch, cursorIdx=(0,0), dtOld=0}
+
+main = lift2 displayGame Window.dimensions (foldp stepGame mkInitialStateMatching input)

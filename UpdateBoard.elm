@@ -6,24 +6,36 @@ import Keyboard
 switchingTimeInSeconds = 0.25
 switchingSpeed = 1.0 / switchingTimeInSeconds
 
-updateTile : Time -> Tile -> Tile
-updateTile dt tile = case tile of
-                       (_, Stationary) -> tile
-                       (c, SwitchingLeft p) ->
-                           if p < 1.0
-                           then (c, SwitchingLeft <| p + dt * switchingSpeed)
-                           else (c, Stationary)
-                       (c, SwitchingRight p) ->
-                           if p < 1.0
-                           then (c, SwitchingRight <| p + dt * switchingSpeed)
-                           else (c, Stationary)
-                       (c, Falling p v) ->
-                           if p < 1.0
-                           then (c, Falling (p + dt * v) (v + dt * 9.81))
-                           else (c, Fell <| v + dt * 9.81)
+matchingTimeInSeconds = 0.1
+matchingSpeed = 1.0 / matchingTimeInSeconds
+
+gravityConstant = 9.81
+
+updateTile : Time -> Maybe Tile -> Maybe Tile
+updateTile timeStep maybeTile = let dt = timeStep in -- for easy time compression/dilation
+  case maybeTile of
+    Nothing -> Nothing
+    Just tile -> case tile of
+                   (_, Stationary) -> Just tile
+                   (c, SwitchingLeft p) ->
+                     if p < 1.0
+                     then Just (c, SwitchingLeft <| p + dt * switchingSpeed)
+                     else Just (c, Stationary)
+                   (c, SwitchingRight p) ->
+                     if p < 1.0
+                     then Just (c, SwitchingRight <| p + dt * switchingSpeed)
+                     else Just (c, Stationary)
+                   (c, Falling p v) ->
+                     if p < 1.0
+                     then Just (c, Falling (p + dt * v) (v + dt * gravityConstant))
+                     else Just (c, Fell (p + dt * v) (v + dt * gravityConstant))
+                   (c, Matching t) ->
+                     if t < 1.0
+                     then Just (c, Matching (t + dt * matchingSpeed))
+                     else Nothing
 
 updateColumn : Time -> [Maybe Tile] -> [Maybe Tile]
-updateColumn dt = map (liftMaybe <| updateTile dt)
+updateColumn dt = map <| updateTile dt
 
 updateBoard : Time -> Board -> Board
 updateBoard dt = map <| updateColumn dt
@@ -83,23 +95,52 @@ updateFallColumn c =
                    Nothing -> case tn of
                                 Just (c, Stationary) ->
                                   go (th::tt) True <| proc ++ [Just (c, Falling 0.0 0.0)]
-                                Just (c, Fell v) ->
-                                  go (th::tt) True <| proc ++ [Just (c, Falling 0.0 v)]
+                                Just (c, Fell p v) ->
+                                  go (th::tt) True <| proc ++ [Just (c, Falling (p-1.0) v)]
                                 _ -> go (th::tt) True <| proc ++ [tn]
             else case th of
                    Nothing -> case tn of
                                 Just (c, Stationary) ->
                                   go (th::tt) True <| proc ++ [Just (c, Falling 0.0 0.0)]
-                                Just (c, Fell v) ->
-                                  go (th::tt) True <| proc ++ [Just (c, Falling 0.0 v)]
+                                Just (c, Fell p v) ->
+                                  go (th::tt) True <| proc ++ [Just (c, Falling (p-1.0) v)]
                                 _ -> go (tn::tt) False <| proc ++ [th]
-                   Just (c, Fell _) -> go (tn::tt) False <| proc ++ [Just (c, Stationary)]
+                   Just (c, Fell _ _) -> go (tn::tt) False <| proc ++ [Just (c, Stationary)]
                    _ -> go (tn::tt) False <| proc ++ [th]
           (th::_) -> proc ++ [th]
   in  go c False []
 
 updateFalls : Board -> Board
 updateFalls = map updateFallColumn
+
+updateMatchesInList : [Maybe Tile] -> [Maybe Tile]
+updateMatchesInList tileList =
+  let match stack numMatches =
+        case numMatches of
+          0 -> stack
+          n -> case head stack of
+                 Just (c,_) -> Just (c, Matching 0.0) :: match (tail stack) (n-1)
+                 -- _ -> error
+      tryMatch stack numMatches = if numMatches >= 3
+                                  then match stack numMatches
+                                  else stack
+      go newList numInARow ts =
+          case ts of
+            [] -> tryMatch newList numInARow
+            Just (tc, Stationary) :: tl ->
+              case newList of
+                [] -> go [Just (tc, Stationary)] 1 tl
+                Just (cn, Stationary) :: _  -> if tc == cn
+                                               then go (head ts :: newList) (numInARow+1) tl
+                                               else go (head ts :: tryMatch newList numInARow) 1 tl
+                _ -> go (head ts :: tryMatch newList numInARow) 1 tl
+            t :: tl -> go (t :: newList) 0 tl
+  in  reverse <| go [] 0 tileList
+
+updateMatches : Board -> Board
+updateMatches b = let columnMatched = map updateMatchesInList b
+                      rowMatched = transpose <| map updateMatchesInList (transpose columnMatched)
+                  in  rowMatched
 
 onUp : Signal Bool -> Signal ()
 onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
@@ -146,5 +187,6 @@ stepGame input {board, cursorIdx, dtOld} =
                        Swap -> swapTiles board newCursorIdx
                        _ -> board
       fallingBoard = updateFalls swappedBoard
-      newBoard = updateBoard (inSeconds newTimeStep) fallingBoard
+      matchedBoard = updateMatches fallingBoard
+      newBoard = updateBoard (inSeconds newTimeStep) matchedBoard
   in  {board = newBoard, cursorIdx = newCursorIdx, dtOld = newTimeStep}

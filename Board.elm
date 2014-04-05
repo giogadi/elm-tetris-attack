@@ -11,7 +11,8 @@ data State = Stationary |
              SwitchingLeft ContinuousPosition |
              SwitchingRight ContinuousPosition |
              Falling ContinuousPosition ContinuousSpeed |
-             Fell ContinuousSpeed
+             Fell ContinuousPosition ContinuousSpeed |
+             Matching Float
 type Tile = (Color, State)
 
 colorToString : Color -> String
@@ -57,6 +58,12 @@ getTileAt b (x,y) = listAtIdx (listAtIdx b x) y
 
 setTileAt : Board -> (Int, Int) -> Maybe Tile -> Board
 setTileAt b (x,y) t = updateAtIdx b x <| updateAtIdx (listAtIdx b x) y t
+
+transpose : [[a]] -> [[a]]
+transpose matrix = case matrix of
+                     [] -> []
+                     [] :: xss -> transpose xss
+                     (x :: xs) :: xss -> (x :: map head xss) :: transpose (xs :: map tail xss)
 
 liftMaybe : (a -> b) -> Maybe a -> Maybe b
 liftMaybe f m = case m of

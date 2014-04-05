@@ -27,6 +27,7 @@ tileScreenPosition { lowerLeftX, lowerLeftY, tileSize } (x,y) tileState =
                   _ -> 0
       offsetY = case tileState of
                   Falling p v -> tileSize - (truncate <| p*(toFloat tileSize))
+                  Fell p v -> tileSize - (truncate <| p*(toFloat tileSize))
                   _ -> 0
   in  (toFloat <| lowerLeftX + halfSize + x * tileSize + offsetX,
        toFloat <| lowerLeftY + halfSize + y * tileSize + offsetY)
