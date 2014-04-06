@@ -2,8 +2,8 @@ module DrawBoard where
 
 import Board (..)
 
-areaW = 640
-areaH = 480
+areaW = 800
+areaH = 600
 
 type BoardPlacementInfo = { lowerLeftX:Int, lowerLeftY:Int, tileSize:Int }
 

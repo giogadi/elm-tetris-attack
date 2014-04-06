@@ -1,7 +1,7 @@
 module Board where
 
-boardRows = 6
-boardColumns = 4
+boardRows = 12
+boardColumns = 7
 
 type ContinuousPosition = Float
 type ContinuousSpeed = Float
@@ -69,3 +69,14 @@ liftMaybe : (a -> b) -> Maybe a -> Maybe b
 liftMaybe f m = case m of
                   Nothing -> Nothing
                   Just x  -> Just <| f x
+
+boardFromRandomInts : [Int] -> Board
+boardFromRandomInts fs =
+    let intLists = zipWith (\floats c -> take boardRows . drop (c*boardRows) <| floats)
+                     (repeat boardColumns fs) [0..(boardColumns - 1)]
+        intToTile x = case x of
+                        0 -> Just (mkTile Red)
+                        1 -> Just (mkTile Blue)
+                        2 -> Just (mkTile Green)
+                        3 -> Just (mkTile Yellow)
+    in  map (map intToTile) intLists
