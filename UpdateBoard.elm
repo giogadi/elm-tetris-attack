@@ -137,10 +137,20 @@ updateMatchesInList tileList =
             t :: tl -> go (t :: tryMatch newList numInARow) 0 tl
   in  reverse <| go [] 0 tileList
 
+combineMatches : Board -> Board -> Board
+combineMatches =
+  let tileOr t1 t2 = case (t1,t2) of
+                       (Just (c, Matching t), Just (c, _)) -> Just (c, Matching t)
+                       (Just (c, _), Just (c, Matching t)) -> Just (c, Matching t)
+                       (t, t) -> t
+                       -- _ -> error
+  in  zipWith (zipWith tileOr)
+
 updateMatches : Board -> Board
 updateMatches b = let columnMatched = map updateMatchesInList b
-                      rowMatched = transpose <| map updateMatchesInList (transpose columnMatched)
-                  in  rowMatched
+                      rowMatched = transpose <| map updateMatchesInList <| transpose b
+                      allMatched = combineMatches columnMatched rowMatched
+                  in  allMatched
 
 onUp : Signal Bool -> Signal ()
 onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
@@ -148,7 +158,6 @@ onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
 onDown : Signal Bool -> Signal ()
 onDown =  lift (\_ -> ()) . keepIf not False . dropRepeats
 
---
 onPressed : Keyboard.KeyCode -> Signal ()
 onPressed = onUp . Keyboard.isDown
 
