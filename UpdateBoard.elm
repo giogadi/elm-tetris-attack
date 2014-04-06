@@ -134,7 +134,7 @@ updateMatchesInList tileList =
                                                then go (head ts :: newList) (numInARow+1) tl
                                                else go (head ts :: tryMatch newList numInARow) 1 tl
                 _ -> go (head ts :: tryMatch newList numInARow) 1 tl
-            t :: tl -> go (t :: newList) 0 tl
+            t :: tl -> go (t :: tryMatch newList numInARow) 0 tl
   in  reverse <| go [] 0 tileList
 
 updateMatches : Board -> Board
