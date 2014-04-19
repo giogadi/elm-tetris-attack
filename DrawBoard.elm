@@ -34,7 +34,7 @@ tileScreenPosition { lowerLeftX, lowerLeftY, tileSize } (x,y) tileState =
 
 formFromTile : BoardPlacementInfo -> (Int,Int) -> Tile -> Form
 formFromTile ({lowerLeftX, lowerLeftY, tileSize} as bpi) tileIdx (c,s) =
-  let tileImgForm = toForm . image tileSize tileSize <| colorToString c ++ ".bmp"
+  let tileImgForm = toForm . image tileSize tileSize <| "resources/" ++ colorToString c ++ ".bmp"
   in move (tileScreenPosition bpi tileIdx s) tileImgForm
 
 formsFromBoard : BoardPlacementInfo -> Board -> [Form]
@@ -51,11 +51,12 @@ cursorPositionFromIdx {lowerLeftX, lowerLeftY, tileSize} (leftX, leftY) =
 
 cursorForm : BoardPlacementInfo -> (Int, Int) -> Form
 cursorForm bpi leftIdx =
-  let imgForm = toForm <| image (bpi.tileSize * 2) (bpi.tileSize) "cursor.png"
+  let imgForm = toForm <| image (bpi.tileSize * 2) (bpi.tileSize) "resources/cursor.png"
   in  move (cursorPositionFromIdx bpi leftIdx) imgForm
 
 displayGame : (Int, Int) -> GameState -> Element
 displayGame (windowW, windowH) game =
   let bpi = getBoardPlacementInfo (areaW, areaH)
   in container windowW windowH middle . collage areaW areaH <|
+       [rect areaW areaH |> filled (rgb 0 0 0)] ++
        formsFromBoard bpi game.board ++ [cursorForm bpi game.cursorIdx]
