@@ -15,5 +15,4 @@ displayMaybeGame w ms = case ms of
                           Nothing -> asText "Just a sec..."
 
 main : Signal Element
--- main = lift asText <| WebSocket.connect "ws://0.0.0.0:9160/slave" <| constant ""
 main = lift2 displayMaybeGame Window.dimensions inStateSignal
