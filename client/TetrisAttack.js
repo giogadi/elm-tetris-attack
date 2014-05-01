@@ -8,7 +8,6 @@ Elm.TetrisAttack.make = function (_elm) {
    _U = _N.Utils.make(_elm),
    _L = _N.List.make(_elm),
    _E = _N.Error.make(_elm),
-   _J = _N.JavaScript.make(_elm),
    $moduleName = "TetrisAttack";
    var Basics = Elm.Basics.make(_elm);
    var Board = Elm.Board.make(_elm);
@@ -21,6 +20,8 @@ Elm.TetrisAttack.make = function (_elm) {
    var List = Elm.List.make(_elm);
    var Maybe = Elm.Maybe.make(_elm);
    var Native = Native || {};
+   Native.Json = Elm.Native.Json.make(_elm);
+   var Native = Native || {};
    Native.Ports = Elm.Native.Ports.make(_elm);
    var PortableBoard = Elm.PortableBoard.make(_elm);
    var Pseudorandom = Elm.Pseudorandom.make(_elm);
@@ -29,6 +30,7 @@ Elm.TetrisAttack.make = function (_elm) {
    var Text = Elm.Text.make(_elm);
    var Time = Elm.Time.make(_elm);
    var UpdateBoard = Elm.UpdateBoard.make(_elm);
+   var WebSocket = Elm.WebSocket.make(_elm);
    var Window = Elm.Window.make(_elm);
    var _op = {};
    var mkInitialBoard = Board.boardFromRandomInts(Basics.fst(A2(Pseudorandom.randomRange,
@@ -40,34 +42,31 @@ Elm.TetrisAttack.make = function (_elm) {
                                     ,_0: 0
                                     ,_1: 0}
                         ,dtOld: 0};
-   var gameStateOut = Native.Ports.portOut("gameStateOut",
-   Native.Ports.outgoingSignal(function (v) {
-      return [_J.fromList(v._0).map(function (v) {
-                return _J.fromList(v).map(function (v) {
-                   return v.ctor === "Nothing" ? null : [_J.fromInt(v._0._0)
-                                                        ,_J.fromInt(v._0._1)
-                                                        ,_J.fromFloat(v._0._2)
-                                                        ,_J.fromFloat(v._0._3)];
-                });
-             })
-             ,[_J.fromInt(v._1._0)
-              ,_J.fromInt(v._1._1)]];
-   }),
-   A2(Signal.lift,
-   PortableBoard.toPortableState,
-   A3(Signal.foldp,
+   var stateSignal = A3(Signal.foldp,
    UpdateBoard.stepGame,
    mkInitialState,
-   UpdateBoard.input)));
-   var main = A3(Signal.lift2,
+   UpdateBoard.input);
+   var outSignal = Signal.lift(PortableBoard.stateToString)(stateSignal);
+   var stateAndInSignal = A2(Signal.lift2,
+   F2(function (v0,v1) {
+      return {ctor: "_Tuple2"
+             ,_0: v0
+             ,_1: v1};
+   }),
+   stateSignal)(A2(WebSocket.connect,
+   "ws://0.0.0.0:9160",
+   outSignal));
+   var main = A2(Signal.lift2,
    DrawBoard.displayGame,
-   Window.dimensions,
-   A2(Signal.lift,
-   PortableBoard.fromPortableState,
-   gameStateOut));
+   Window.dimensions)(A2(Signal.lift,
+   Basics.fst,
+   stateAndInSignal));
    _elm.TetrisAttack.values = {_op: _op
                               ,mkInitialBoard: mkInitialBoard
                               ,mkInitialState: mkInitialState
+                              ,stateSignal: stateSignal
+                              ,outSignal: outSignal
+                              ,stateAndInSignal: stateAndInSignal
                               ,main: main};
    return _elm.TetrisAttack.values;
 };Elm.UpdateBoard = Elm.UpdateBoard || {};
@@ -80,7 +79,6 @@ Elm.UpdateBoard.make = function (_elm) {
    _U = _N.Utils.make(_elm),
    _L = _N.List.make(_elm),
    _E = _N.Error.make(_elm),
-   _J = _N.JavaScript.make(_elm),
    $moduleName = "UpdateBoard";
    var Basics = Elm.Basics.make(_elm);
    var Board = Elm.Board.make(_elm);
@@ -92,6 +90,8 @@ Elm.UpdateBoard.make = function (_elm) {
    var Keyboard = Elm.Keyboard.make(_elm);
    var List = Elm.List.make(_elm);
    var Maybe = Elm.Maybe.make(_elm);
+   var Native = Native || {};
+   Native.Json = Elm.Native.Json.make(_elm);
    var Native = Native || {};
    Native.Ports = Elm.Native.Ports.make(_elm);
    var Signal = Elm.Signal.make(_elm);
@@ -142,12 +142,12 @@ Elm.UpdateBoard.make = function (_elm) {
    var input = function () {
       var keyPressInput = Signal.merges(A3(List.zipWith,
       keyPressed,
-      _J.toList([37,39,40,38,32]),
-      _J.toList([CursorLeft
-                ,CursorRight
-                ,CursorDown
-                ,CursorUp
-                ,Swap])));
+      _L.fromArray([37,39,40,38,32]),
+      _L.fromArray([CursorLeft
+                   ,CursorRight
+                   ,CursorDown
+                   ,CursorUp
+                   ,Swap])));
       return Signal.merge(keyPressInput)(A2(Signal._op["<~"],
       NewTimeStep,
       Time.fps(60)));
@@ -267,9 +267,9 @@ Elm.UpdateBoard.make = function (_elm) {
                                                 break;}
                                            break;
                                          case "[]": return A3(go,
-                                           _J.toList([Maybe.Just({ctor: "_Tuple2"
-                                                                 ,_0: ts._0._0._0
-                                                                 ,_1: Board.Stationary})]),
+                                           _L.fromArray([Maybe.Just({ctor: "_Tuple2"
+                                                                    ,_0: ts._0._0._0
+                                                                    ,_1: Board.Stationary})]),
                                            1,
                                            ts._1);}
                                       return A3(go,
@@ -299,7 +299,7 @@ Elm.UpdateBoard.make = function (_elm) {
             }();
          });
          return List.reverse(A3(go,
-         _J.toList([]),
+         _L.fromArray([]),
          0,
          tileList));
       }();
@@ -339,22 +339,22 @@ Elm.UpdateBoard.make = function (_elm) {
                                                    ,_0: ts._0
                                                    ,_1: ts._1._1},
                                                    true)(_L.append(proc,
-                                                   _J.toList([Maybe.Just({ctor: "_Tuple2"
-                                                                         ,_0: ts._1._0._0._0
-                                                                         ,_1: A2(Board.Falling,
-                                                                         ts._1._0._0._1._0 - 1.0,
-                                                                         ts._1._0._0._1._1)})])));
+                                                   _L.fromArray([Maybe.Just({ctor: "_Tuple2"
+                                                                            ,_0: ts._1._0._0._0
+                                                                            ,_1: A2(Board.Falling,
+                                                                            ts._1._0._0._1._0 - 1.0,
+                                                                            ts._1._0._0._1._1)})])));
                                                  case "Stationary":
                                                  return A2(go,
                                                    {ctor: "::"
                                                    ,_0: ts._0
                                                    ,_1: ts._1._1},
                                                    true)(_L.append(proc,
-                                                   _J.toList([Maybe.Just({ctor: "_Tuple2"
-                                                                         ,_0: ts._1._0._0._0
-                                                                         ,_1: A2(Board.Falling,
-                                                                         0.0,
-                                                                         0.0)})])));}
+                                                   _L.fromArray([Maybe.Just({ctor: "_Tuple2"
+                                                                            ,_0: ts._1._0._0._0
+                                                                            ,_1: A2(Board.Falling,
+                                                                            0.0,
+                                                                            0.0)})])));}
                                               break;}
                                          break;}
                                     return A2(go,
@@ -362,7 +362,7 @@ Elm.UpdateBoard.make = function (_elm) {
                                     ,_0: ts._0
                                     ,_1: ts._1._1},
                                     true)(_L.append(proc,
-                                    _J.toList([ts._1._0])));
+                                    _L.fromArray([ts._1._0])));
                                  }();}
                             _E.Case($moduleName,
                             "between lines 94 and 101");
@@ -377,9 +377,9 @@ Elm.UpdateBoard.make = function (_elm) {
                                            ,_0: ts._1._0
                                            ,_1: ts._1._1},
                                            false)(_L.append(proc,
-                                           _J.toList([Maybe.Just({ctor: "_Tuple2"
-                                                                 ,_0: ts._0._0._0
-                                                                 ,_1: Board.Stationary})])));}
+                                           _L.fromArray([Maybe.Just({ctor: "_Tuple2"
+                                                                    ,_0: ts._0._0._0
+                                                                    ,_1: Board.Stationary})])));}
                                       break;}
                                  break;
                                case "Nothing":
@@ -394,22 +394,22 @@ Elm.UpdateBoard.make = function (_elm) {
                                                    ,_0: ts._0
                                                    ,_1: ts._1._1},
                                                    true)(_L.append(proc,
-                                                   _J.toList([Maybe.Just({ctor: "_Tuple2"
-                                                                         ,_0: ts._1._0._0._0
-                                                                         ,_1: A2(Board.Falling,
-                                                                         ts._1._0._0._1._0 - 1.0,
-                                                                         ts._1._0._0._1._1)})])));
+                                                   _L.fromArray([Maybe.Just({ctor: "_Tuple2"
+                                                                            ,_0: ts._1._0._0._0
+                                                                            ,_1: A2(Board.Falling,
+                                                                            ts._1._0._0._1._0 - 1.0,
+                                                                            ts._1._0._0._1._1)})])));
                                                  case "Stationary":
                                                  return A2(go,
                                                    {ctor: "::"
                                                    ,_0: ts._0
                                                    ,_1: ts._1._1},
                                                    true)(_L.append(proc,
-                                                   _J.toList([Maybe.Just({ctor: "_Tuple2"
-                                                                         ,_0: ts._1._0._0._0
-                                                                         ,_1: A2(Board.Falling,
-                                                                         0.0,
-                                                                         0.0)})])));}
+                                                   _L.fromArray([Maybe.Just({ctor: "_Tuple2"
+                                                                            ,_0: ts._1._0._0._0
+                                                                            ,_1: A2(Board.Falling,
+                                                                            0.0,
+                                                                            0.0)})])));}
                                               break;}
                                          break;}
                                     return A2(go,
@@ -417,17 +417,17 @@ Elm.UpdateBoard.make = function (_elm) {
                                     ,_0: ts._1._0
                                     ,_1: ts._1._1},
                                     false)(_L.append(proc,
-                                    _J.toList([ts._0])));
+                                    _L.fromArray([ts._0])));
                                  }();}
                             return A2(go,
                             {ctor: "::"
                             ,_0: ts._1._0
                             ,_1: ts._1._1},
                             false)(_L.append(proc,
-                            _J.toList([ts._0])));
+                            _L.fromArray([ts._0])));
                          }();}
                     return _L.append(proc,
-                    _J.toList([ts._0]));}
+                    _L.fromArray([ts._0]));}
                _E.Case($moduleName,
                "between lines 91 and 111");
             }();
@@ -435,7 +435,7 @@ Elm.UpdateBoard.make = function (_elm) {
          return A3(go,
          c,
          false,
-         _J.toList([]));
+         _L.fromArray([]));
       }();
    };
    var updateFalls = List.map(updateFallColumn);
@@ -724,7 +724,6 @@ Elm.PortableBoard.make = function (_elm) {
    _U = _N.Utils.make(_elm),
    _L = _N.List.make(_elm),
    _E = _N.Error.make(_elm),
-   _J = _N.JavaScript.make(_elm),
    $moduleName = "PortableBoard";
    var Basics = Elm.Basics.make(_elm);
    var Board = Elm.Board.make(_elm);
@@ -733,8 +732,11 @@ Elm.PortableBoard.make = function (_elm) {
    Graphics.Collage = Elm.Graphics.Collage.make(_elm);
    var Graphics = Graphics || {};
    Graphics.Element = Elm.Graphics.Element.make(_elm);
+   var Json = Elm.Json.make(_elm);
    var List = Elm.List.make(_elm);
    var Maybe = Elm.Maybe.make(_elm);
+   var Native = Native || {};
+   Native.Json = Elm.Native.Json.make(_elm);
    var Native = Native || {};
    Native.Ports = Elm.Native.Ports.make(_elm);
    var Signal = Elm.Signal.make(_elm);
@@ -742,121 +744,329 @@ Elm.PortableBoard.make = function (_elm) {
    var Text = Elm.Text.make(_elm);
    var Time = Elm.Time.make(_elm);
    var _op = {};
-   var fromPortableTile = function (_v0) {
+   var jsonToCursor = function (_v0) {
       return function () {
          switch (_v0.ctor)
-         {case "_Tuple4":
-            return function () {
-                 var c = Board.colorFromInt(_v0._0);
-                 return function () {
-                    switch (_v0._1)
-                    {case 0: return {ctor: "_Tuple2"
-                                    ,_0: c
-                                    ,_1: Board.Stationary};
-                       case 1: return {ctor: "_Tuple2"
-                                      ,_0: c
-                                      ,_1: Board.SwitchingLeft(_v0._2)};
-                       case 2: return {ctor: "_Tuple2"
-                                      ,_0: c
-                                      ,_1: Board.SwitchingRight(_v0._2)};
-                       case 3: return {ctor: "_Tuple2"
-                                      ,_0: c
-                                      ,_1: A2(Board.Falling,
-                                      _v0._2,
-                                      _v0._3)};
-                       case 4: return {ctor: "_Tuple2"
-                                      ,_0: c
-                                      ,_1: A2(Board.Fell,
-                                      _v0._2,
-                                      _v0._3)};
-                       case 5: return {ctor: "_Tuple2"
-                                      ,_0: c
-                                      ,_1: Board.Matching(_v0._2)};}
-                    _E.Case($moduleName,
-                    "between lines 21 and 27");
-                 }();
-              }();}
+         {case "Array":
+            switch (_v0._0.ctor)
+              {case "::":
+                 switch (_v0._0._0.ctor)
+                   {case "Number":
+                      switch (_v0._0._1.ctor)
+                        {case "::":
+                           switch (_v0._0._1._0.ctor)
+                             {case "Number":
+                                switch (_v0._0._1._1.ctor)
+                                  {case "[]":
+                                     return {ctor: "_Tuple2"
+                                            ,_0: Basics.round(_v0._0._0._0)
+                                            ,_1: Basics.round(_v0._0._1._0._0)};}
+                                  break;}
+                             break;}
+                        break;}
+                   break;}
+              break;}
          _E.Case($moduleName,
-         "between lines 20 and 27");
+         "on line 50, column 54 to 70");
       }();
    };
-   var fromPortableBoard = List.map(List.map(Board.liftMaybe(fromPortableTile)));
-   var fromPortableState = function (_v7) {
+   var cursorToJson = function (_v9) {
       return function () {
-         switch (_v7.ctor)
-         {case "_Tuple2": return {_: {}
-                                 ,board: fromPortableBoard(_v7._0)
-                                 ,cursorIdx: _v7._1
-                                 ,dtOld: 0};}
-         _E.Case($moduleName,
-         "on line 39, column 29 to 78");
-      }();
-   };
-   var toPortableTile = function (_v11) {
-      return function () {
-         switch (_v11.ctor)
+         switch (_v9.ctor)
          {case "_Tuple2":
-            return function () {
-                 var i = Board.intFromColor(_v11._0);
-                 return function () {
-                    switch (_v11._1.ctor)
-                    {case "Falling":
-                       return {ctor: "_Tuple4"
-                              ,_0: i
-                              ,_1: 3
-                              ,_2: _v11._1._0
-                              ,_3: _v11._1._1};
-                       case "Fell":
-                       return {ctor: "_Tuple4"
-                              ,_0: i
-                              ,_1: 4
-                              ,_2: _v11._1._0
-                              ,_3: _v11._1._1};
-                       case "Matching":
-                       return {ctor: "_Tuple4"
-                              ,_0: i
-                              ,_1: 5
-                              ,_2: _v11._1._0
-                              ,_3: 0};
-                       case "Stationary":
-                       return {ctor: "_Tuple4"
-                              ,_0: i
-                              ,_1: 0
-                              ,_2: 0
-                              ,_3: 0};
-                       case "SwitchingLeft":
-                       return {ctor: "_Tuple4"
-                              ,_0: i
-                              ,_1: 1
-                              ,_2: _v11._1._0
-                              ,_3: 0};
-                       case "SwitchingRight":
-                       return {ctor: "_Tuple4"
-                              ,_0: i
-                              ,_1: 2
-                              ,_2: _v11._1._0
-                              ,_3: 0};}
-                    _E.Case($moduleName,
-                    "between lines 11 and 17");
-                 }();
-              }();}
+            return Json.Array(_L.fromArray([Json.Number(Basics.toFloat(_v9._0))
+                                           ,Json.Number(Basics.toFloat(_v9._1))]));}
          _E.Case($moduleName,
-         "between lines 10 and 17");
+         "on line 47, column 22 to 70");
       }();
    };
-   var toPortableBoard = List.map(List.map(Board.liftMaybe(toPortableTile)));
-   var toPortableState = function (s) {
-      return {ctor: "_Tuple2"
-             ,_0: toPortableBoard(s.board)
-             ,_1: s.cursorIdx};
+   var jsonToTile = function (jsonV) {
+      return function () {
+         switch (jsonV.ctor)
+         {case "Array":
+            switch (jsonV._0.ctor)
+              {case "::":
+                 switch (jsonV._0._0.ctor)
+                   {case "Number":
+                      switch (jsonV._0._1.ctor)
+                        {case "::":
+                           switch (jsonV._0._1._0.ctor)
+                             {case "Number":
+                                return function () {
+                                     var s = Basics.round(jsonV._0._1._0._0);
+                                     var c = Board.colorFromInt(Basics.round(jsonV._0._0._0));
+                                     return Maybe.Just(function () {
+                                        switch (s)
+                                        {case 0: return {ctor: "_Tuple2"
+                                                        ,_0: c
+                                                        ,_1: Board.Stationary};
+                                           case 1: return function () {
+                                                var _raw = List.head(jsonV._0._1._1),
+                                                $ = _raw.ctor === "Json.Number" ? _raw : _E.Case($moduleName,
+                                                "on line 26, column 56 to 63"),
+                                                x = $._0;
+                                                return {ctor: "_Tuple2"
+                                                       ,_0: c
+                                                       ,_1: Board.SwitchingLeft(x)};
+                                             }();
+                                           case 2: return function () {
+                                                var _raw = List.head(jsonV._0._1._1),
+                                                $ = _raw.ctor === "Json.Number" ? _raw : _E.Case($moduleName,
+                                                "on line 27, column 56 to 63"),
+                                                x = $._0;
+                                                return {ctor: "_Tuple2"
+                                                       ,_0: c
+                                                       ,_1: Board.SwitchingRight(x)};
+                                             }();
+                                           case 3: return function () {
+                                                var _ = jsonV._0._1._1;
+                                                var x = function () {
+                                                   switch (_.ctor)
+                                                   {case "::":
+                                                      switch (_._0.ctor)
+                                                        {case "Number":
+                                                           switch (_._1.ctor)
+                                                             {case "::":
+                                                                switch (_._1._0.ctor)
+                                                                  {case "Number":
+                                                                     switch (_._1._1.ctor)
+                                                                       {case "[]":
+                                                                          return _._0._0;}
+                                                                       break;}
+                                                                  break;}
+                                                             break;}
+                                                        break;}
+                                                   _E.Case($moduleName,
+                                                   "on line 28, column 74 to 76");
+                                                }();
+                                                var y = function () {
+                                                   switch (_.ctor)
+                                                   {case "::":
+                                                      switch (_._0.ctor)
+                                                        {case "Number":
+                                                           switch (_._1.ctor)
+                                                             {case "::":
+                                                                switch (_._1._0.ctor)
+                                                                  {case "Number":
+                                                                     switch (_._1._1.ctor)
+                                                                       {case "[]":
+                                                                          return _._1._0._0;}
+                                                                       break;}
+                                                                  break;}
+                                                             break;}
+                                                        break;}
+                                                   _E.Case($moduleName,
+                                                   "on line 28, column 74 to 76");
+                                                }();
+                                                return {ctor: "_Tuple2"
+                                                       ,_0: c
+                                                       ,_1: A2(Board.Falling,
+                                                       x,
+                                                       y)};
+                                             }();
+                                           case 4: return function () {
+                                                var _ = jsonV._0._1._1;
+                                                var x = function () {
+                                                   switch (_.ctor)
+                                                   {case "::":
+                                                      switch (_._0.ctor)
+                                                        {case "Number":
+                                                           switch (_._1.ctor)
+                                                             {case "::":
+                                                                switch (_._1._0.ctor)
+                                                                  {case "Number":
+                                                                     switch (_._1._1.ctor)
+                                                                       {case "[]":
+                                                                          return _._0._0;}
+                                                                       break;}
+                                                                  break;}
+                                                             break;}
+                                                        break;}
+                                                   _E.Case($moduleName,
+                                                   "on line 30, column 74 to 76");
+                                                }();
+                                                var y = function () {
+                                                   switch (_.ctor)
+                                                   {case "::":
+                                                      switch (_._0.ctor)
+                                                        {case "Number":
+                                                           switch (_._1.ctor)
+                                                             {case "::":
+                                                                switch (_._1._0.ctor)
+                                                                  {case "Number":
+                                                                     switch (_._1._1.ctor)
+                                                                       {case "[]":
+                                                                          return _._1._0._0;}
+                                                                       break;}
+                                                                  break;}
+                                                             break;}
+                                                        break;}
+                                                   _E.Case($moduleName,
+                                                   "on line 30, column 74 to 76");
+                                                }();
+                                                return {ctor: "_Tuple2"
+                                                       ,_0: c
+                                                       ,_1: A2(Board.Fell,x,y)};
+                                             }();
+                                           case 5: return function () {
+                                                var _raw = List.head(jsonV._0._1._1),
+                                                $ = _raw.ctor === "Json.Number" ? _raw : _E.Case($moduleName,
+                                                "on line 32, column 56 to 63"),
+                                                x = $._0;
+                                                return {ctor: "_Tuple2"
+                                                       ,_0: c
+                                                       ,_1: Board.Matching(x)};
+                                             }();}
+                                        _E.Case($moduleName,
+                                        "between lines 24 and 32");
+                                     }());
+                                  }();}
+                             break;}
+                        break;}
+                   break;}
+              break;
+            case "Null":
+            return Maybe.Nothing;}
+         _E.Case($moduleName,
+         "between lines 19 and 32");
+      }();
+   };
+   var jsonToBoard = function (_v50) {
+      return function () {
+         switch (_v50.ctor)
+         {case "Array":
+            return function () {
+                 var go = F3(function (proc,
+                 ts,
+                 colsLeft) {
+                    return function () {
+                       switch (colsLeft)
+                       {case 0: return proc;}
+                       return function () {
+                          var $ = {ctor: "_Tuple2"
+                                  ,_0: A2(List.take,
+                                  Board.boardRows,
+                                  ts)
+                                  ,_1: A2(List.drop,
+                                  Board.boardRows,
+                                  ts)},
+                          ts1 = $._0,
+                          ts2 = $._1;
+                          return A3(go,
+                          {ctor: "::",_0: ts1,_1: proc},
+                          ts2,
+                          colsLeft - 1);
+                       }();
+                    }();
+                 });
+                 var mts = A2(List.map,
+                 jsonToTile,
+                 _v50._0);
+                 return List.reverse(A3(go,
+                 _L.fromArray([]),
+                 mts,
+                 Board.boardColumns));
+              }();}
+         _E.Case($moduleName,
+         "between lines 38 and 44");
+      }();
+   };
+   var jsonToState = function (_v54) {
+      return function () {
+         switch (_v54.ctor)
+         {case "Array":
+            switch (_v54._0.ctor)
+              {case "::":
+                 switch (_v54._0._1.ctor)
+                   {case "::":
+                      switch (_v54._0._1._1.ctor)
+                        {case "[]": return {_: {}
+                                           ,board: jsonToBoard(_v54._0._0)
+                                           ,cursorIdx: jsonToCursor(_v54._0._1._0)
+                                           ,dtOld: 0};}
+                        break;}
+                   break;}
+              break;}
+         _E.Case($moduleName,
+         "on line 57, column 4 to 81");
+      }();
+   };
+   var stringToState = function (str) {
+      return function () {
+         var _raw = Json.fromString(str),
+         $ = _raw.ctor === "Maybe.Just" ? _raw : _E.Case($moduleName,
+         "on line 64, column 40 to 54"),
+         jsonV = $._0;
+         return jsonToState(jsonV);
+      }();
+   };
+   var tileToJson = function (mt) {
+      return function () {
+         switch (mt.ctor)
+         {case "Just":
+            switch (mt._0.ctor)
+              {case "_Tuple2":
+                 return function () {
+                      var i = Json.Number(Basics.toFloat(Board.intFromColor(mt._0._0)));
+                      return function () {
+                         switch (mt._0._1.ctor)
+                         {case "Falling":
+                            return Json.Array(_L.fromArray([i
+                                                           ,Json.Number(3)
+                                                           ,Json.Number(mt._0._1._0)
+                                                           ,Json.Number(mt._0._1._1)]));
+                            case "Fell":
+                            return Json.Array(_L.fromArray([i
+                                                           ,Json.Number(4)
+                                                           ,Json.Number(mt._0._1._0)
+                                                           ,Json.Number(mt._0._1._1)]));
+                            case "Matching":
+                            return Json.Array(_L.fromArray([i
+                                                           ,Json.Number(5)
+                                                           ,Json.Number(mt._0._1._0)]));
+                            case "Stationary":
+                            return Json.Array(_L.fromArray([i
+                                                           ,Json.Number(0)]));
+                            case "SwitchingLeft":
+                            return Json.Array(_L.fromArray([i
+                                                           ,Json.Number(1)
+                                                           ,Json.Number(mt._0._1._0)]));
+                            case "SwitchingRight":
+                            return Json.Array(_L.fromArray([i
+                                                           ,Json.Number(2)
+                                                           ,Json.Number(mt._0._1._0)]));}
+                         _E.Case($moduleName,
+                         "between lines 10 and 16");
+                      }();
+                   }();}
+              break;
+            case "Nothing":
+            return Json.Null;}
+         _E.Case($moduleName,
+         "between lines 7 and 16");
+      }();
+   };
+   var boardToJson = function ($) {
+      return Json.Array(List.concatMap(List.map(tileToJson))($));
+   };
+   var stateToJson = function (s) {
+      return Json.Array(_L.fromArray([boardToJson(s.board)
+                                     ,cursorToJson(s.cursorIdx)]));
+   };
+   var stateToString = function (s) {
+      return Json.toString("")(stateToJson(s));
    };
    _elm.PortableBoard.values = {_op: _op
-                               ,toPortableTile: toPortableTile
-                               ,fromPortableTile: fromPortableTile
-                               ,toPortableBoard: toPortableBoard
-                               ,fromPortableBoard: fromPortableBoard
-                               ,toPortableState: toPortableState
-                               ,fromPortableState: fromPortableState};
+                               ,tileToJson: tileToJson
+                               ,jsonToTile: jsonToTile
+                               ,boardToJson: boardToJson
+                               ,jsonToBoard: jsonToBoard
+                               ,cursorToJson: cursorToJson
+                               ,jsonToCursor: jsonToCursor
+                               ,stateToJson: stateToJson
+                               ,jsonToState: jsonToState
+                               ,stateToString: stateToString
+                               ,stringToState: stringToState};
    return _elm.PortableBoard.values;
 };Elm.DrawBoard = Elm.DrawBoard || {};
 Elm.DrawBoard.make = function (_elm) {
@@ -868,7 +1078,6 @@ Elm.DrawBoard.make = function (_elm) {
    _U = _N.Utils.make(_elm),
    _L = _N.List.make(_elm),
    _E = _N.Error.make(_elm),
-   _J = _N.JavaScript.make(_elm),
    $moduleName = "DrawBoard";
    var Basics = Elm.Basics.make(_elm);
    var Board = Elm.Board.make(_elm);
@@ -879,6 +1088,8 @@ Elm.DrawBoard.make = function (_elm) {
    Graphics.Element = Elm.Graphics.Element.make(_elm);
    var List = Elm.List.make(_elm);
    var Maybe = Elm.Maybe.make(_elm);
+   var Native = Native || {};
+   Native.Json = Elm.Native.Json.make(_elm);
    var Native = Native || {};
    Native.Ports = Elm.Native.Ports.make(_elm);
    var Signal = Elm.Signal.make(_elm);
@@ -1043,7 +1254,7 @@ Elm.DrawBoard.make = function (_elm) {
                  _v34._1,
                  Graphics.Element.middle)(A2(Graphics.Collage.collage,
                  areaW,
-                 areaH)(_L.append(_J.toList([Graphics.Collage.filled(A3(Color.rgb,
+                 areaH)(_L.append(_L.fromArray([Graphics.Collage.filled(A3(Color.rgb,
                  0,
                  0,
                  0))(A2(Graphics.Collage.rect,
@@ -1052,7 +1263,7 @@ Elm.DrawBoard.make = function (_elm) {
                  _L.append(A2(formsFromBoard,
                  bpi,
                  game.board),
-                 _J.toList([A2(cursorForm,
+                 _L.fromArray([A2(cursorForm,
                  bpi,
                  game.cursorIdx)])))));
               }();}
@@ -1083,7 +1294,6 @@ Elm.Board.make = function (_elm) {
    _U = _N.Utils.make(_elm),
    _L = _N.List.make(_elm),
    _E = _N.Error.make(_elm),
-   _J = _N.JavaScript.make(_elm),
    $moduleName = "Board";
    var Basics = Elm.Basics.make(_elm);
    var Color = Elm.Color.make(_elm);
@@ -1093,6 +1303,8 @@ Elm.Board.make = function (_elm) {
    Graphics.Element = Elm.Graphics.Element.make(_elm);
    var List = Elm.List.make(_elm);
    var Maybe = Elm.Maybe.make(_elm);
+   var Native = Native || {};
+   Native.Json = Elm.Native.Json.make(_elm);
    var Native = Native || {};
    Native.Ports = Elm.Native.Ports.make(_elm);
    var Signal = Elm.Signal.make(_elm);
@@ -1132,7 +1344,7 @@ Elm.Board.make = function (_elm) {
                  return transpose(matrix._1);}
               break;
             case "[]":
-            return _J.toList([]);}
+            return _L.fromArray([]);}
          _E.Case($moduleName,
          "between lines 56 and 59");
       }();
@@ -1156,7 +1368,7 @@ Elm.Board.make = function (_elm) {
                        idx - 1,
                        x,
                        _L.append(proc,
-                       _J.toList([_v7._0])));
+                       _L.fromArray([_v7._0])));
                     }();}
                _E.Case($moduleName,
                "between lines 44 and 47");
@@ -1166,7 +1378,7 @@ Elm.Board.make = function (_elm) {
          xs,
          idx,
          x,
-         _J.toList([]));
+         _L.fromArray([]));
       }();
    });
    var listAtIdx = F2(function (xs,
@@ -1250,10 +1462,10 @@ Elm.Board.make = function (_elm) {
    var Red = {ctor: "Red"};
    var colorIntMap = A2(List.zip,
    _L.range(0,3),
-   _J.toList([Red
-             ,Blue
-             ,Green
-             ,Yellow]));
+   _L.fromArray([Red
+                ,Blue
+                ,Green
+                ,Yellow]));
    var colorFromInt = function (c) {
       return function () {
          switch (c)
@@ -1366,7 +1578,6 @@ Elm.Pseudorandom.make = function (_elm) {
    _U = _N.Utils.make(_elm),
    _L = _N.List.make(_elm),
    _E = _N.Error.make(_elm),
-   _J = _N.JavaScript.make(_elm),
    $moduleName = "Pseudorandom";
    var Basics = Elm.Basics.make(_elm);
    var Bitwise = Elm.Bitwise.make(_elm);
@@ -1377,6 +1588,8 @@ Elm.Pseudorandom.make = function (_elm) {
    Graphics.Element = Elm.Graphics.Element.make(_elm);
    var List = Elm.List.make(_elm);
    var Maybe = Elm.Maybe.make(_elm);
+   var Native = Native || {};
+   Native.Json = Elm.Native.Json.make(_elm);
    var Native = Native || {};
    Native.Ports = Elm.Native.Ports.make(_elm);
    var Signal = Elm.Signal.make(_elm);
@@ -1445,7 +1658,7 @@ Elm.Pseudorandom.make = function (_elm) {
          }();
       },
       {ctor: "_Tuple2"
-      ,_0: _J.toList([])
+      ,_0: _L.fromArray([])
       ,_1: r});
    });
    _op[">>="] = F2(function (m,f) {
@@ -1481,7 +1694,7 @@ Elm.Pseudorandom.make = function (_elm) {
             });
          });
       }),
-      pure(_J.toList([])),
+      pure(_L.fromArray([])),
       ms);
    };
    var mapM = function (f) {
