@@ -153,11 +153,13 @@ combineMatches =
                        -- _ -> error
   in  zipWith (zipWith tileOr)
 
+-- Does not update matches for 0th row because that one is still coming up from below
 updateMatches : Board -> Board
-updateMatches b = let columnMatched = map updateMatchesInList b
-                      rowMatched = transpose <| map updateMatchesInList <| transpose b
+updateMatches b = let subBoard = map tail b
+                      columnMatched = map updateMatchesInList subBoard
+                      rowMatched = transpose <| map updateMatchesInList <| transpose subBoard
                       allMatched = combineMatches columnMatched rowMatched
-                  in  allMatched
+                  in  zipWith (::) (map head b) allMatched
 
 scrollBoard : Board -> Int -> (Board, Int)
 scrollBoard b rng = let (randInts, rng') = Pseudorandom.randomRange (0,3) boardColumns <| rng
