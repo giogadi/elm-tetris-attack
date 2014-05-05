@@ -1,18 +1,20 @@
 module DrawBoard where
 
 import Board (..)
+import Debug
 
 areaW = 800
 areaH = 600
 
 type BoardPlacementInfo = { lowerLeftX:Int, lowerLeftY:Int, tileSize:Int }
 
-getBoardPlacementInfo : (Int, Int) -> BoardPlacementInfo
-getBoardPlacementInfo (w,h) = let heightRatio = 0.9
-                                  tSize = truncate <| heightRatio * (toFloat h) / (toFloat boardRows)
-                                  llX = -(truncate <| (toFloat boardColumns / 2) * toFloat tSize)
-                                  llY = (-h `div` 2)
-                              in  { lowerLeftX = llX, lowerLeftY = llY, tileSize = tSize }
+getBoardPlacementInfo : (Int, Int) -> Float -> BoardPlacementInfo
+getBoardPlacementInfo (w,h) scroll =
+  let heightRatio = 0.9
+      tSize = truncate <| heightRatio * (toFloat h) / (toFloat boardRows)
+      llX = -(truncate <| (toFloat boardColumns / 2) * toFloat tSize)
+      llY = (-h `div` 2) + round (scroll * (toFloat tSize))
+  in  { lowerLeftX = llX, lowerLeftY = llY, tileSize = tSize }
 
 -- [0,1] -> [0,1] with f'(0) = f'(1) = f''(0) = f''(1) = 0
 smoothStep : Time -> Time
@@ -34,7 +36,12 @@ tileScreenPosition { lowerLeftX, lowerLeftY, tileSize } (x,y) tileState =
 
 formFromTile : BoardPlacementInfo -> (Int,Int) -> Tile -> Form
 formFromTile ({lowerLeftX, lowerLeftY, tileSize} as bpi) tileIdx (c,s) =
-  let tileImgForm = toForm . image tileSize tileSize <| "resources/" ++ colorToString c ++ ".bmp"
+  -- let tileImgForm = toForm . image tileSize tileSize <| "resources/" ++ colorToString c ++ ".bmp"
+  let tileImgForm = case c of
+                      Red -> filled red <| square (toFloat tileSize)
+                      Blue -> filled blue <| square (toFloat tileSize)
+                      Green -> filled green <| square (toFloat tileSize)
+                      Yellow -> filled yellow <| square (toFloat tileSize)
   in move (tileScreenPosition bpi tileIdx s) tileImgForm
 
 formsFromBoard : BoardPlacementInfo -> Board -> [Form]
@@ -56,7 +63,7 @@ cursorForm bpi leftIdx =
 
 displayGame : (Int, Int) -> GameState -> Element
 displayGame (windowW, windowH) game =
-  let bpi = getBoardPlacementInfo (areaW, areaH)
+  let bpi = getBoardPlacementInfo (areaW, areaH) game.globalScroll
   in container windowW windowH middle . collage areaW areaH <|
        [rect areaW areaH |> filled (rgb 0 0 0)] ++
        formsFromBoard bpi game.board ++ [cursorForm bpi game.cursorIdx]

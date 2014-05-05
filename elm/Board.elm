@@ -20,7 +20,7 @@ mkTile c = (c, Stationary)
 
 type Board = [[Maybe Tile]]
 
-type GameState = { board:Board, cursorIdx:(Int,Int), dtOld:Time }
+type GameState = { board:Board, cursorIdx:(Int,Int), globalScroll:Float, rng:Int, dtOld:Time }
 
 mkEmptyColumn : [Maybe Tile]
 mkEmptyColumn = repeat boardRows Nothing
@@ -86,10 +86,11 @@ colorToString c = case c of
                     Blue -> "blue"
                     Green -> "green"
                     Yellow -> "yellow"
+intToTile : Int -> Maybe Tile
+intToTile = Just . mkTile . colorFromInt
 
 boardFromRandomInts : [Int] -> Board
 boardFromRandomInts fs =
     let intLists = zipWith (\floats c -> take boardRows . drop (c*boardRows) <| floats)
                      (repeat boardColumns fs) [0..(boardColumns - 1)]
-        intToTile x = Just (mkTile <| colorFromInt x)
     in  map (map intToTile) intLists

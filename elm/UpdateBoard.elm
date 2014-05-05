@@ -2,12 +2,17 @@ module UpdateBoard where
 
 import Board (..)
 import Keyboard
+import Pseudorandom
+import Debug
 
 switchingTimeInSeconds = 0.25
 switchingSpeed = 1.0 / switchingTimeInSeconds
 
 matchingTimeInSeconds = 0.1
 matchingSpeed = 1.0 / matchingTimeInSeconds
+
+oneStepScrollTimeInSeconds = 2.0
+scrollSpeed = 1.0 / oneStepScrollTimeInSeconds
 
 gravityConstant = 9.81
 
@@ -33,6 +38,7 @@ updateTile timeStep maybeTile = let dt = timeStep in -- for easy time compressio
                      if t < 1.0
                      then Just (c, Matching (t + dt * matchingSpeed))
                      else Nothing
+                   whatever -> Just <| Debug.log "updateTile:" whatever
 
 updateColumn : Time -> [Maybe Tile] -> [Maybe Tile]
 updateColumn dt = map <| updateTile dt
@@ -54,7 +60,7 @@ moveCursorRight (currentX, currentY) =
 
 moveCursorDown : (Int, Int) -> (Int, Int)
 moveCursorDown (currentX, currentY) =
-  if currentY == 0
+  if currentY <= 1
     then (currentX, currentY)
     else (currentX, currentY - 1)
 
@@ -85,6 +91,7 @@ swapTiles b (x,y) = let left = getTileAt b (x,y)
                              in  setTileAt b1 (x+1,y) (liftMaybe switchTileRight left)
                         else b
 
+-- TODO: look into why some "fells" are getting through here
 updateFallColumn : [Maybe Tile] -> [Maybe Tile]
 updateFallColumn c =
   let go ts falling proc =
@@ -152,6 +159,11 @@ updateMatches b = let columnMatched = map updateMatchesInList b
                       allMatched = combineMatches columnMatched rowMatched
                   in  allMatched
 
+scrollBoard : Board -> Int -> (Board, Int)
+scrollBoard b rng = let (randInts, rng') = Pseudorandom.randomRange (0,3) boardColumns <| rng
+                        tailless = map (take (boardRows - 1)) b
+                    in  (zipWith (::) (map intToTile randInts) tailless, rng')
+
 onUp : Signal Bool -> Signal ()
 onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
 
@@ -182,7 +194,7 @@ input = let keyPressInput = merges <| zipWith keyPressed
         in  merge keyPressInput <| NewTimeStep <~ fps 60
 
 stepGame : Input -> GameState -> GameState
-stepGame input {board, cursorIdx, dtOld} =
+stepGame input {board, cursorIdx, globalScroll, rng, dtOld} =
   let newCursorIdx = case input of
                        CursorLeft -> moveCursorLeft cursorIdx
                        CursorRight -> moveCursorRight cursorIdx
@@ -197,5 +209,11 @@ stepGame input {board, cursorIdx, dtOld} =
                        _ -> board
       fallingBoard = updateFalls swappedBoard
       matchedBoard = updateMatches fallingBoard
-      newBoard = updateBoard (inSeconds newTimeStep) matchedBoard
-  in  {board = newBoard, cursorIdx = newCursorIdx, dtOld = newTimeStep}
+      stepScroll = globalScroll + (inSeconds newTimeStep) * scrollSpeed
+      (scrolledBoard, scrolledCursor, newScroll, newRNG) =
+        if stepScroll >= 1.0
+        then let (scrolled, rng') = scrollBoard matchedBoard rng
+             in  (scrolled, moveCursorUp newCursorIdx, stepScroll - 1.0, rng')
+        else (matchedBoard, newCursorIdx, stepScroll, rng)
+      newBoard = updateBoard (inSeconds newTimeStep) scrolledBoard
+  in  {board = newBoard, cursorIdx = scrolledCursor, globalScroll = newScroll, rng = newRNG, dtOld = newTimeStep}

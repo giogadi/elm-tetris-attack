@@ -9,7 +9,10 @@ import Pseudorandom
 import WebSocket
 
 mkInitialBoard = boardFromRandomInts . fst <| Pseudorandom.randomRange (0,3) (boardRows*boardColumns) <| 1
-mkInitialState = {board=mkInitialBoard, cursorIdx=(0,0), dtOld=0}
+mkInitialState =
+  let (randomIntList, rng') = Pseudorandom.randomRange (0,3) (boardRows*boardColumns) <| 1
+      randomBoard = boardFromRandomInts randomIntList
+  in  {board=randomBoard, cursorIdx = (0,1), globalScroll=0.0, rng=rng', dtOld=0}
 
 stateSignal : Signal GameState
 stateSignal = foldp stepGame mkInitialState input
