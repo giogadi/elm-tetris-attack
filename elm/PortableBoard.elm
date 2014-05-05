@@ -6,7 +6,7 @@ import Json (..)
 tileToJson : Maybe Tile -> Value
 tileToJson mt = case mt of
                   Nothing -> Null
-                  Just (c,s) -> let i = Number <| toFloat <| intFromColor c in
+                  Just (c,s) -> let i = Number <| toFloat c in
                                 case s of
                                   Stationary -> Array [i, Number 0]
                                   SwitchingLeft x -> Array [i, Number 1, Number x]
@@ -19,7 +19,7 @@ jsonToTile : Value -> Maybe Tile
 jsonToTile jsonV = case jsonV of
                      Null -> Nothing
                      Array (Number cNum :: Number sFloat :: xs) ->
-                       let c = colorFromInt <| round cNum
+                       let c = round cNum
                            s = round sFloat in
                        case s of
                          0 -> Just (c, Stationary)

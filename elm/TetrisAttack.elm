@@ -8,9 +8,8 @@ import Window
 import Pseudorandom
 import WebSocket
 
-mkInitialBoard = boardFromRandomInts . fst <| Pseudorandom.randomRange (0,3) (boardRows*boardColumns) <| 1
 mkInitialState =
-  let (randomIntList, rng') = Pseudorandom.randomRange (0,3) (boardRows*boardColumns) <| 1
+  let (randomIntList, rng') = Pseudorandom.randomRange (0,numColors-1) (boardRows*boardColumns) <| 1
       randomBoard = boardFromRandomInts randomIntList
   in  {board=randomBoard, cursorIdx = (0,1), globalScroll=0.0, rng=rng', dtOld=0}
 

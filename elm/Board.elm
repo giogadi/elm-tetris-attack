@@ -6,16 +6,20 @@ boardColumns = 7
 type ContinuousPosition = Float
 type ContinuousSpeed = Float
 
-data Color = Red | Blue | Green | Yellow
+
+type TileColor = Int
+
+numColors = 6
+
 data State = Stationary |
              SwitchingLeft ContinuousPosition |
              SwitchingRight ContinuousPosition |
              Falling ContinuousPosition ContinuousSpeed |
              Fell ContinuousPosition ContinuousSpeed |
              Matching Float
-type Tile = (Color, State)
+type Tile = (TileColor, State)
 
-mkTile : Color -> Tile
+mkTile : TileColor -> Tile
 mkTile c = (c, Stationary)
 
 type Board = [[Maybe Tile]]
@@ -63,31 +67,8 @@ liftMaybe f m = case m of
                   Nothing -> Nothing
                   Just x  -> Just <| f x
 
-colorIntMap : [(Int,Color)]
-colorIntMap = zip [0..3] [Red, Blue, Green, Yellow]
-
-colorFromInt : Int -> Color
-colorFromInt c = case c of
-                   0 -> Red
-                   1 -> Blue
-                   2 -> Green
-                   3 -> Yellow
-
-intFromColor : Color -> Int
-intFromColor c = case c of
-                   Red -> 0
-                   Blue -> 1
-                   Green -> 2
-                   Yellow -> 3
-
-colorToString : Color -> String
-colorToString c = case c of
-                    Red -> "red"
-                    Blue -> "blue"
-                    Green -> "green"
-                    Yellow -> "yellow"
 intToTile : Int -> Maybe Tile
-intToTile = Just . mkTile . colorFromInt
+intToTile = Just . mkTile
 
 boardFromRandomInts : [Int] -> Board
 boardFromRandomInts fs =

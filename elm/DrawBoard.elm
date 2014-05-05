@@ -2,9 +2,16 @@ module DrawBoard where
 
 import Board (..)
 import Debug
+import Dict
 
 areaW = 800
 areaH = 600
+
+colorMapList : [(TileColor, Color)]
+colorMapList = [(0, red), (1, blue), (2, green), (3, yellow), (4, orange), (5, purple)]
+
+colorMap : Dict.Dict TileColor Color
+colorMap = Dict.fromList colorMapList
 
 type BoardPlacementInfo = { lowerLeftX:Int, lowerLeftY:Int, tileSize:Int, scrollOff:Int }
 
@@ -38,11 +45,12 @@ tileScreenPosition { lowerLeftX, lowerLeftY, tileSize, scrollOff } (x,y) tileSta
 formFromTile : BoardPlacementInfo -> (Int,Int) -> Tile -> Form
 formFromTile ({lowerLeftX, lowerLeftY, tileSize, scrollOff} as bpi) tileIdx (c,s) =
   -- let tileImgForm = toForm . image tileSize tileSize <| "resources/" ++ colorToString c ++ ".bmp"
-  let tileImgForm = case c of
-                      Red -> filled red <| square (toFloat tileSize)
-                      Blue -> filled blue <| square (toFloat tileSize)
-                      Green -> filled green <| square (toFloat tileSize)
-                      Yellow -> filled yellow <| square (toFloat tileSize)
+  -- let tileImgForm = case c of
+  --                     Red -> filled red <| square (toFloat tileSize)
+  --                     Blue -> filled blue <| square (toFloat tileSize)
+  --                     Green -> filled green <| square (toFloat tileSize)
+  --                     Yellow -> filled yellow <| square (toFloat tileSize)
+  let tileImgForm = filled (Dict.getOrFail c colorMap) <| square (toFloat tileSize)
   in move (tileScreenPosition bpi tileIdx s) tileImgForm
 
 formsFromBoard : BoardPlacementInfo -> Board -> [Form]
