@@ -16,10 +16,11 @@ mkInitialState =
 stateSignal : Signal GameState
 stateSignal = foldp stepGame mkInitialState input
 
-outSignal : Signal String
-outSignal = lift stateToString <| stateSignal
+-- outSignal : Signal String
+-- outSignal = lift stateToString <| stateSignal
 
-stateAndInSignal : Signal (GameState, String)
-stateAndInSignal = lift2 (,) stateSignal <| WebSocket.connect "ws://0.0.0.0:9160" outSignal
+-- stateAndInSignal : Signal (GameState, String)
+-- stateAndInSignal = lift2 (,) stateSignal <| WebSocket.connect "ws://0.0.0.0:9160" outSignal
 
-main = lift2 displayGame Window.dimensions <| lift fst stateAndInSignal
+-- main = lift2 displayGame Window.dimensions <| lift fst stateAndInSignal
+main = lift2 displayGame Window.dimensions <| stateSignal

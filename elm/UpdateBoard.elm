@@ -11,7 +11,7 @@ switchingSpeed = 1.0 / switchingTimeInSeconds
 matchingTimeInSeconds = 0.1
 matchingSpeed = 1.0 / matchingTimeInSeconds
 
-oneStepScrollTimeInSeconds = 2.0
+oneStepScrollTimeInSeconds = 5.0
 scrollSpeed = 1.0 / oneStepScrollTimeInSeconds
 
 gravityConstant = 9.81
@@ -66,7 +66,7 @@ moveCursorDown (currentX, currentY) =
 
 moveCursorUp : (Int, Int) -> (Int, Int)
 moveCursorUp (currentX, currentY) =
-  if currentY == boardRows - 1
+  if currentY == boardRows - 2
     then (currentX, currentY)
     else (currentX, currentY + 1)
 
@@ -162,7 +162,7 @@ updateMatches b = let subBoard = map tail b
                   in  zipWith (::) (map head b) allMatched
 
 scrollBoard : Board -> Int -> (Board, Int)
-scrollBoard b rng = let (randInts, rng') = Pseudorandom.randomRange (0,3) boardColumns <| rng
+scrollBoard b rng = let (randInts, rng') = Pseudorandom.randomRange (0,numColors-1) boardColumns <| rng
                         tailless = map (take (boardRows - 1)) b
                     in  (zipWith (::) (map intToTile randInts) tailless, rng')
 
