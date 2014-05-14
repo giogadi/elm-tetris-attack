@@ -1,6 +1,7 @@
-module DrawBoard where
+module DrawGame where
 
 import Board (..)
+import GameState (..)
 import Debug
 import Dict
 
@@ -81,10 +82,16 @@ boundaryForms {lowerLeftX, lowerLeftY, tileSize, scrollOff} =
       upperY = toFloat <| lowerLeftY + boardHeight - halfSize
   in  move (x,lowerY) boundForm :: [move (x,upperY) boundForm]
 
-displayGame : (Int, Int) -> GameState -> Element
-displayGame (windowW, windowH) game =
+displayBoard : (Int, Int) -> BoardState -> Element
+displayBoard (windowW, windowH) game =
   let bpi = getBoardPlacementInfo (areaW, areaH) game.globalScroll
   in container windowW windowH middle . collage areaW areaH <|
        [rect areaW areaH |> filled black] ++
        formsFromBoard bpi game.board ++ [cursorForm bpi game.cursorIdx] ++
        boundaryForms bpi
+
+displayGame : (Int, Int) -> GameState -> Element
+displayGame windowDims state = case state of
+                                 StartScreen -> asText "Press space to start"
+                                 PlayScreen s -> displayBoard windowDims s
+                                 EndScreen -> asText "YOUR BAD press space"

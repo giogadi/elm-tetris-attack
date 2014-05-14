@@ -24,7 +24,7 @@ mkTile c = (c, Stationary)
 
 type Board = [[Maybe Tile]]
 
-type GameState = { board:Board, cursorIdx:(Int,Int), globalScroll:Float, rng:Int, dtOld:Time }
+type BoardState = { board:Board, cursorIdx:(Int,Int), globalScroll:Float, rng:Int, dtOld:Time }
 
 mkEmptyColumn : [Maybe Tile]
 mkEmptyColumn = repeat boardRows Nothing
@@ -75,3 +75,6 @@ boardFromRandomInts fs =
     let intLists = zipWith (\floats c -> take boardRows . drop (c*boardRows) <| floats)
                      (repeat boardColumns fs) [0..(boardColumns - 1)]
     in  map (map intToTile) intLists
+
+playerHasLost : Board -> Bool
+playerHasLost = any (isJust . (flip listAtIdx) (boardRows-1))

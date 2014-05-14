@@ -50,10 +50,10 @@ cursorToJson (x,y) = Array [Number <| toFloat x, Number <| toFloat y]
 jsonToCursor : Value -> (Int, Int)
 jsonToCursor (Array (Number x :: Number y :: [])) = (round x, round y)
 
-stateToJson : GameState -> Value
+stateToJson : BoardState -> Value
 stateToJson s = Array [boardToJson s.board, cursorToJson s.cursorIdx, Number s.globalScroll]
 
-jsonToState : Value -> GameState
+jsonToState : Value -> BoardState
 jsonToState (Array (boardJson :: cursorJson :: (Number scroll) :: [])) =
   {board = jsonToBoard boardJson,
    cursorIdx = jsonToCursor cursorJson,
@@ -62,8 +62,8 @@ jsonToState (Array (boardJson :: cursorJson :: (Number scroll) :: [])) =
    dtOld = 0}
 
 
-stateToString : GameState -> String
+stateToString : BoardState -> String
 stateToString s = toString "" <| stateToJson s
 
-stringToState : String -> Maybe GameState
+stringToState : String -> Maybe BoardState
 stringToState str = liftMaybe jsonToState <| fromString str

@@ -1,20 +1,15 @@
 module TetrisAttack where
 
 import Board (..)
-import DrawBoard (..)
-import UpdateBoard (..)
 import PortableBoard (..)
 import Window
-import Pseudorandom
+import GameState (..)
+import DrawGame (..)
 import WebSocket
-
-mkInitialState =
-  let (randomIntList, rng') = Pseudorandom.randomRange (0,numColors-1) (boardRows*boardColumns) <| 1
-      randomBoard = boardFromRandomInts randomIntList
-  in  {board=randomBoard, cursorIdx = (0,1), globalScroll=0.0, rng=rng', dtOld=0}
+import Input (..)
 
 stateSignal : Signal GameState
-stateSignal = foldp stepGame mkInitialState input
+stateSignal = foldp stepGame StartScreen input
 
 -- outSignal : Signal String
 -- outSignal = lift stateToString <| stateSignal

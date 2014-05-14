@@ -11,7 +11,7 @@ switchingSpeed = 1.0 / switchingTimeInSeconds
 matchingTimeInSeconds = 0.1
 matchingSpeed = 1.0 / matchingTimeInSeconds
 
-oneStepScrollTimeInSeconds = 5.0
+oneStepScrollTimeInSeconds = 1.0
 scrollSpeed = 1.0 / oneStepScrollTimeInSeconds
 
 gravityConstant = 9.81
@@ -166,37 +166,16 @@ scrollBoard b rng = let (randInts, rng') = Pseudorandom.randomRange (0,numColors
                         tailless = map (take (boardRows - 1)) b
                     in  (zipWith (::) (map intToTile randInts) tailless, rng')
 
-onUp : Signal Bool -> Signal ()
-onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
+data GameInput = None |
+                 CursorLeft |
+                 CursorRight |
+                 CursorDown |
+                 CursorUp |
+                 Swap |
+                 NewTimeStep Time
 
-onDown : Signal Bool -> Signal ()
-onDown =  lift (\_ -> ()) . keepIf not False . dropRepeats
-
-onPressed : Keyboard.KeyCode -> Signal ()
-onPressed = onUp . Keyboard.isDown
-
-onReleased : Keyboard.KeyCode -> Signal ()
-onReleased = onDown . Keyboard.isDown
-
-data Input = None |
-             CursorLeft |
-             CursorRight |
-             CursorDown |
-             CursorUp |
-             Swap |
-             NewTimeStep Time
-
-keyPressed : Keyboard.KeyCode -> Input -> Signal Input
-keyPressed key action = merge (constant None) <| always action <~ onPressed key
-
-input : Signal Input
-input = let keyPressInput = merges <| zipWith keyPressed
-                                        [37, 39, 40, 38, 32]
-                                        [CursorLeft, CursorRight, CursorDown, CursorUp, Swap]
-        in  merge keyPressInput <| NewTimeStep <~ fps 60
-
-stepGame : Input -> GameState -> GameState
-stepGame input {board, cursorIdx, globalScroll, rng, dtOld} =
+stepBoard : GameInput -> BoardState -> BoardState
+stepBoard input {board, cursorIdx, globalScroll, rng, dtOld} =
   let newCursorIdx = case input of
                        CursorLeft -> moveCursorLeft cursorIdx
                        CursorRight -> moveCursorRight cursorIdx
