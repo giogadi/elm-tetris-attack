@@ -29,4 +29,4 @@ input : Signal Input
 input = let keyPressInput = merges <| zipWith keyPressed
                                         [37, 39, 40, 38, 32]
                                         [LeftArrow, RightArrow, DownArrow, UpArrow, Spacebar]
-        in  merge keyPressInput <| NewTimeStep <~ fps 60
+        in  merge keyPressInput <| NewTimeStep <~ fps 30
