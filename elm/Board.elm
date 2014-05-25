@@ -23,8 +23,9 @@ mkTile : TileColor -> Tile
 mkTile c = (c, Stationary)
 
 type Board = [[Maybe Tile]]
+type RandSeed = Int
 
-type BoardState = { board:Board, cursorIdx:(Int,Int), globalScroll:Float, rng:Int, dtOld:Time }
+type BoardState = { board:Board, cursorIdx:(Int,Int), globalScroll:Float, rng:RandSeed, dtOld:Time }
 
 mkEmptyColumn : [Maybe Tile]
 mkEmptyColumn = repeat boardRows Nothing
@@ -70,11 +71,11 @@ liftMaybe f m = case m of
 intToTile : Int -> Maybe Tile
 intToTile = Just . mkTile
 
-boardFromRandomInts : [Int] -> Board
-boardFromRandomInts fs =
-    let intLists = zipWith (\floats c -> take boardRows . drop (c*boardRows) <| floats)
-                     (repeat boardColumns fs) [0..(boardColumns - 1)]
-    in  map (map intToTile) intLists
+columnFromRandomInts : [Int] -> [Maybe Tile]
+columnFromRandomInts ints = map intToTile ints ++ repeat (boardRows - length ints) Nothing
+
+boardFromRandomInts : [[Int]] -> Board
+boardFromRandomInts ints = map columnFromRandomInts ints
 
 playerHasLost : Board -> Bool
 playerHasLost = any (isJust . (flip listAtIdx) (boardRows-1))

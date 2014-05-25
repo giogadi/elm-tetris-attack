@@ -9,7 +9,7 @@ import WebSocket
 import Input (..)
 
 stateSignal : Signal GameState
-stateSignal = foldp stepGame StartScreen input
+stateSignal = foldp stepGame (StartScreen 1) input
 
 outSignal : Signal String
 outSignal = lift inputToString input

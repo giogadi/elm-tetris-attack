@@ -76,7 +76,7 @@ boundaryForms {lowerLeftX, lowerLeftY, tileSize, scrollOff} =
   let halfSize = tileSize `div` 2
       boardWidth = tileSize * boardColumns
       boardHeight = tileSize * (boardRows + 1)
-      boundForm = filled black <| rect ((toFloat boardWidth)*1.5) (toFloat <| tileSize)
+      boundForm = filled white <| rect ((toFloat boardWidth)*1.5) (toFloat <| tileSize)
       x = toFloat <| lowerLeftX + (boardWidth `div` 2)
       lowerY = toFloat <| lowerLeftY + halfSize
       upperY = toFloat <| lowerLeftY + boardHeight - halfSize
@@ -92,6 +92,6 @@ displayBoard (windowW, windowH) game =
 
 displayGame : (Int, Int) -> GameState -> Element
 displayGame windowDims state = case state of
-                                 StartScreen -> asText "Press space to start"
+                                 StartScreen _ -> asText "Press space to start"
                                  PlayScreen s -> displayBoard windowDims s
-                                 EndScreen -> asText "YOUR BAD press space"
+                                 EndScreen _ -> asText "YOUR BAD press space"
