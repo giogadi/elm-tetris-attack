@@ -23,8 +23,9 @@ mkTile : TileColor -> Tile
 mkTile c = (c, Stationary)
 
 type Board = [[Maybe Tile]]
+type RandSeed = Int
 
-type BoardState = { board:Board, cursorIdx:(Int,Int), globalScroll:Float, rng:Int, dtOld:Time }
+type BoardState = { board:Board, cursorIdx:(Int,Int), globalScroll:Float, rng:RandSeed, dtOld:Time }
 
 mkEmptyColumn : [Maybe Tile]
 mkEmptyColumn = repeat boardRows Nothing

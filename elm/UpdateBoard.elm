@@ -161,7 +161,7 @@ updateMatches b = let subBoard = map tail b
                       allMatched = combineMatches columnMatched rowMatched
                   in  zipWith (::) (map head b) allMatched
 
-scrollBoard : Board -> Int -> (Board, Int)
+scrollBoard : Board -> RandSeed -> (Board, Int)
 scrollBoard b rng = let (randInts, rng') = Pseudorandom.randomRange (0,numColors-1) boardColumns <| rng
                         tailless = map (take (boardRows - 1)) b
                     in  (zipWith (::) (map intToTile randInts) tailless, rng')

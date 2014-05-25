@@ -92,6 +92,6 @@ displayBoard (windowW, windowH) game =
 
 displayGame : (Int, Int) -> GameState -> Element
 displayGame windowDims state = case state of
-                                 StartScreen -> asText "Press space to start"
+                                 StartScreen _ -> asText "Press space to start"
                                  PlayScreen s -> displayBoard windowDims s
-                                 EndScreen -> asText "YOUR BAD press space"
+                                 EndScreen _ -> asText "YOUR BAD press space"
