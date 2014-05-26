@@ -11,6 +11,7 @@ import qualified Data.Text.IO as T
 import Data.ByteString.Char8 (unpack)
 import Data.Maybe (isJust, fromJust)
 import Control.Concurrent (forkIO)
+import System.Random
 
 import qualified Network.Wai
 import qualified Network.WebSockets as WS
@@ -81,7 +82,8 @@ application state pending = do
     ((fca, tca), (fcb, tcb)) <- readMVar state
     when (isJust fca && isJust tca &&
           isJust fcb && isJust tcb) $ do
-      let readyJsonStr = "[0]" :: Text
+      randSeed <- getStdRandom random :: IO Int
+      let readyJsonStr = T.pack ("[0," ++ show randSeed ++ "]" :: String)
       WS.sendTextData (fromJust tca) readyJsonStr
       WS.sendTextData (fromJust tcb) readyJsonStr
     serveLoop state (fromJust maybeWhich)

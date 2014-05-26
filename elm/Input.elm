@@ -3,6 +3,7 @@ module Input where
 import Keyboard
 import Json (..)
 import WebSocket
+import Board (RandSeed)
 
 onUp : Signal Bool -> Signal ()
 onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
@@ -49,19 +50,19 @@ jsonToKeyInput (Number x) = case x of
                               4 -> DownArrow
                               5 -> Spacebar
 
--- TODO maybe have Ready also include a random seed from the server
-data RemoteInput = Ready | GameOver | RemoteKey KeyInput | RemoteNone
+data RemoteInput = Ready RandSeed | GameOver | RemoteKey KeyInput | RemoteNone
 
 remoteInputToJson : RemoteInput -> Value
 remoteInputToJson i = case i of
-                        Ready -> Array [Number 0]
+                        Ready s -> Array [Number 0, Number <| toFloat s]
                         GameOver -> Array [Number 1]
                         RemoteKey k -> Array [Number 2, keyInputToJson k]
                         RemoteNone -> Array [Number 3]
 
 jsonToRemoteInput : Value -> RemoteInput
 jsonToRemoteInput (Array (Number x :: xs)) = case x of
-                                               0 -> Ready
+                                               0 -> let ((Number s) :: []) = xs
+                                                    in  Ready <| round s
                                                1 -> GameOver
                                                2 -> let (k :: []) = xs
                                                     in  RemoteKey <| jsonToKeyInput k
@@ -84,16 +85,3 @@ input : Signal Input
 input = merges [lift Remote remoteInput,
                 lift Local keyPressInput,
                 lift NewTimeStep <| fps 60]
-
--- inOutKeyInput : Signal KeyInput
--- inOutKeyInput = let pair = lift2 (,) keyPressInput <| WebSocket.connect "ws://0.0.0.0:9160" <| lift keyInputToString keyPressInput
---                 in  lift fst pair
-
--- remoteKeyInput : Signal KeyInput
--- remoteKeyInput = lift stringToKeyInput <| WebSocket.connect "ws://0.0.0.0:9160/slave" <| constant ""
-
--- input : Signal Input
--- input = merges [lift LocalKey inOutKeyInput,
---                 lift RemoteKey remoteKeyInput,
---                 lift NewTimeStep <| fps 60]
--- input = merge (lift2 Key keyPressInput remoteKeyInput) <| lift NewTimeStep <| fps 60

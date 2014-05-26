@@ -85,15 +85,15 @@ boundaryForms {lowerLeftX, lowerLeftY, tileSize, scrollOff} =
 displayBoard : (Int, Int) -> BoardState -> Element
 displayBoard (windowW, windowH) game =
   let bpi = getBoardPlacementInfo (areaW, areaH) game.globalScroll
-  in container windowW windowH middle . collage areaW areaH <|
+  in container windowW windowH middle <| collage areaW areaH <|
        [rect areaW areaH |> filled black] ++
        formsFromBoard bpi game.board ++ [cursorForm bpi game.cursorIdx] ++
        boundaryForms bpi
 
 displayGame : (Int, Int) -> GameState -> Element
 displayGame (w, h) state = case state of
-                                 StartScreen _ -> asText "Waiting for other player..."
+                                 StartScreen -> asText "Waiting for other player..."
                                  PlayScreen sA sB -> let a = displayBoard (w `div` 2, h) sA
                                                          b = displayBoard (w `div` 2, h) sB
                                                      in  a `beside` b
-                                 EndScreen _ -> asText "GAME OVER"
+                                 EndScreen -> asText "GAME OVER"

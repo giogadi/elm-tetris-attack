@@ -5,9 +5,9 @@ import UpdateBoard
 import Input (..)
 import Pseudorandom
 
-data GameState = StartScreen RandSeed |
+data GameState = StartScreen |
                  PlayScreen BoardState BoardState |
-                 EndScreen RandSeed
+                 EndScreen
 
 keyInputToBoardInput : KeyInput -> UpdateBoard.GameInput
 keyInputToBoardInput keyInput = case keyInput of
@@ -29,27 +29,27 @@ inputToBoardInputs i = case i of
 stepGame : Input -> (GameState, RemoteInput) -> (GameState, RemoteInput)
 stepGame gameInput (state, _) =
   case state of
-    StartScreen rng -> case gameInput of
-                         Remote Ready -> (PlayScreen
-                                            (mkInitialBoardState rng 4)
-                                            (mkInitialBoardState rng 4),
-                                          RemoteNone)
-                         otherwise -> (StartScreen rng, RemoteNone)
+    StartScreen -> case gameInput of
+                     Remote (Ready rng) -> (PlayScreen
+                                              (mkInitialBoardState rng 4)
+                                              (mkInitialBoardState rng 4),
+                                            RemoteNone)
+                     otherwise -> (StartScreen, RemoteNone)
     PlayScreen boardStateA boardStateB ->
-      if playerHasLost boardStateA.board
-      then (EndScreen boardStateA.rng, GameOver)
+      if playerHasLost boardStateA.board || gameInput == Remote GameOver
+      then (EndScreen, GameOver)
       else let (inputA, inputB) = inputToBoardInputs gameInput
            in  (PlayScreen (UpdateBoard.stepBoard inputA boardStateA)
                            (UpdateBoard.stepBoard inputB boardStateB),
                 case gameInput of
                   Local k -> RemoteKey k
                   otherwise -> RemoteNone)
-    EndScreen rng -> case gameInput of
-                       Remote Ready -> (PlayScreen
-                                          (mkInitialBoardState rng 4)
-                                          (mkInitialBoardState rng 4),
-                                        RemoteNone)
-                       otherwise -> (EndScreen rng, RemoteNone)
+    EndScreen -> case gameInput of
+                   Remote (Ready rng) -> (PlayScreen
+                                            (mkInitialBoardState rng 4)
+                                            (mkInitialBoardState rng 4),
+                                          RemoteNone)
+                   otherwise -> (EndScreen, RemoteNone)
 
 mkInitialBoardState : RandSeed -> Int -> BoardState
 mkInitialBoardState seed maxInitColHeight =

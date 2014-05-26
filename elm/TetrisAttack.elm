@@ -8,7 +8,7 @@ import Input (..)
 import WebSocket
 
 stateSignal : Signal GameState
-stateSignal = let stateAndOutputPair = foldp stepGame (StartScreen 1, RemoteNone) input
+stateSignal = let stateAndOutputPair = foldp stepGame (StartScreen, RemoteNone) input
                   out = WebSocket.connect "ws://0.0.0.0:9160/send"
                           (lift remoteInputToString <| dropRepeats <| lift snd stateAndOutputPair)
               in  lift fst stateAndOutputPair
