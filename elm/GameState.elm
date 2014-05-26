@@ -6,33 +6,50 @@ import Input (..)
 import Pseudorandom
 
 data GameState = StartScreen RandSeed |
-                 PlayScreen BoardState |
+                 PlayScreen BoardState BoardState |
                  EndScreen RandSeed
 
-inputToGameInput : Input -> UpdateBoard.GameInput
-inputToGameInput input = case input of
-                           None -> UpdateBoard.None
-                           LeftArrow -> UpdateBoard.CursorLeft
-                           RightArrow -> UpdateBoard.CursorRight
-                           UpArrow -> UpdateBoard.CursorUp
-                           DownArrow -> UpdateBoard.CursorDown
-                           Spacebar -> UpdateBoard.Swap
-                           NewTimeStep t -> UpdateBoard.NewTimeStep t
+keyInputToBoardInput : KeyInput -> UpdateBoard.GameInput
+keyInputToBoardInput keyInput = case keyInput of
+                                  None -> UpdateBoard.None
+                                  LeftArrow -> UpdateBoard.CursorLeft
+                                  RightArrow -> UpdateBoard.CursorRight
+                                  UpArrow -> UpdateBoard.CursorUp
+                                  DownArrow -> UpdateBoard.CursorDown
+                                  Spacebar -> UpdateBoard.Swap
 
-stepGame : Input -> GameState -> GameState
-stepGame input state =
+inputToBoardInputs : Input -> (UpdateBoard.GameInput, UpdateBoard.GameInput)
+inputToBoardInputs i = case i of
+                         Local k  -> (keyInputToBoardInput k, UpdateBoard.None)
+                         Remote (RemoteKey k) -> (UpdateBoard.None, keyInputToBoardInput k)
+                         NewTimeStep dt ->  (UpdateBoard.NewTimeStep dt,
+                                             UpdateBoard.NewTimeStep dt)
+                         otherwise -> (UpdateBoard.None, UpdateBoard.None)
+
+stepGame : Input -> (GameState, RemoteInput) -> (GameState, RemoteInput)
+stepGame gameInput (state, _) =
   case state of
-    StartScreen rng -> case input of
-                         Spacebar -> PlayScreen <| mkInitialBoardState rng 4
-                         otherwise -> StartScreen rng
-    PlayScreen boardState ->
-      let {board, cursorIdx, globalScroll, rng, dtOld} = boardState
-      in  if playerHasLost board
-          then EndScreen rng
-          else PlayScreen <| UpdateBoard.stepBoard (inputToGameInput input) boardState
-    EndScreen rng -> case input of
-                       Spacebar -> PlayScreen <| mkInitialBoardState rng 4
-                       otherwise -> EndScreen rng
+    StartScreen rng -> case gameInput of
+                         Remote Ready -> (PlayScreen
+                                            (mkInitialBoardState rng 4)
+                                            (mkInitialBoardState rng 4),
+                                          RemoteNone)
+                         otherwise -> (StartScreen rng, RemoteNone)
+    PlayScreen boardStateA boardStateB ->
+      if playerHasLost boardStateA.board
+      then (EndScreen boardStateA.rng, GameOver)
+      else let (inputA, inputB) = inputToBoardInputs gameInput
+           in  (PlayScreen (UpdateBoard.stepBoard inputA boardStateA)
+                           (UpdateBoard.stepBoard inputB boardStateB),
+                case gameInput of
+                  Local k -> RemoteKey k
+                  otherwise -> RemoteNone)
+    EndScreen rng -> case gameInput of
+                       Remote Ready -> (PlayScreen
+                                          (mkInitialBoardState rng 4)
+                                          (mkInitialBoardState rng 4),
+                                        RemoteNone)
+                       otherwise -> (EndScreen rng, RemoteNone)
 
 mkInitialBoardState : RandSeed -> Int -> BoardState
 mkInitialBoardState seed maxInitColHeight =

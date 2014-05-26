@@ -1,21 +1,16 @@
 module TetrisAttack where
 
 import Board (..)
-import PortableBoard (..)
 import Window
 import GameState (..)
 import DrawGame (..)
-import WebSocket
 import Input (..)
+import WebSocket
 
 stateSignal : Signal GameState
-stateSignal = foldp stepGame (StartScreen 1) input
+stateSignal = let stateAndOutputPair = foldp stepGame (StartScreen 1, RemoteNone) input
+                  out = WebSocket.connect "ws://0.0.0.0:9160/send"
+                          (lift remoteInputToString <| dropRepeats <| lift snd stateAndOutputPair)
+              in  lift fst stateAndOutputPair
 
-outSignal : Signal String
-outSignal = lift inputToString input
-
-stateAndInSignal : Signal (GameState, String)
-stateAndInSignal = lift2 (,) stateSignal <| WebSocket.connect "ws://0.0.0.0:9160" outSignal
-
-main = lift2 displayGame Window.dimensions <| lift fst stateAndInSignal
--- main = lift2 displayGame Window.dimensions <| stateSignal
+main = lift2 displayGame Window.dimensions <| stateSignal

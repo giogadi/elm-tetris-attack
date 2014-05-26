@@ -11,7 +11,7 @@ switchingSpeed = 1.0 / switchingTimeInSeconds
 matchingTimeInSeconds = 0.1
 matchingSpeed = 1.0 / matchingTimeInSeconds
 
-oneStepScrollTimeInSeconds = 3.0
+oneStepScrollTimeInSeconds = 5.0
 scrollSpeed = 1.0 / oneStepScrollTimeInSeconds
 
 gravityConstant = 9.81

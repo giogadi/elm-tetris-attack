@@ -91,7 +91,9 @@ displayBoard (windowW, windowH) game =
        boundaryForms bpi
 
 displayGame : (Int, Int) -> GameState -> Element
-displayGame windowDims state = case state of
-                                 StartScreen _ -> asText "Press space to start"
-                                 PlayScreen s -> displayBoard windowDims s
-                                 EndScreen _ -> asText "YOUR BAD press space"
+displayGame (w, h) state = case state of
+                                 StartScreen _ -> asText "Waiting for other player..."
+                                 PlayScreen sA sB -> let a = displayBoard (w `div` 2, h) sA
+                                                         b = displayBoard (w `div` 2, h) sB
+                                                     in  a `beside` b
+                                 EndScreen _ -> asText "GAME OVER"
