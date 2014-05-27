@@ -18,38 +18,50 @@ keyInputToBoardInput keyInput = case keyInput of
                                   DownArrow -> UpdateBoard.CursorDown
                                   Spacebar -> UpdateBoard.Swap
 
-inputToBoardInputs : Input -> (UpdateBoard.GameInput, UpdateBoard.GameInput)
-inputToBoardInputs i = case i of
-                         Local k  -> (keyInputToBoardInput k, UpdateBoard.None)
-                         Remote (RemoteKey k) -> (UpdateBoard.None, keyInputToBoardInput k)
-                         NewTimeStep dt ->  (UpdateBoard.NewTimeStep dt,
-                                             UpdateBoard.NewTimeStep dt)
-                         otherwise -> (UpdateBoard.None, UpdateBoard.None)
+inputToNewBoards : Input -> (BoardState, BoardState) -> (BoardState, BoardState)
+inputToNewBoards i (bA, bB) =
+  case i of
+    Remote (SyncState s) -> (UpdateBoard.stepBoard UpdateBoard.None bA, s)
+    Remote (RemoteKey k) -> (UpdateBoard.stepBoard UpdateBoard.None bA,
+                             UpdateBoard.stepBoard (keyInputToBoardInput k) bB)
+    Local k -> (UpdateBoard.stepBoard (keyInputToBoardInput k) bA,
+                UpdateBoard.stepBoard UpdateBoard.None bB)
+    NewTimeStep dt -> (UpdateBoard.stepBoard (UpdateBoard.NewTimeStep dt) bA,
+                       UpdateBoard.stepBoard (UpdateBoard.NewTimeStep dt) bB)
+    otherwise -> (UpdateBoard.stepBoard UpdateBoard.None bA,
+                  UpdateBoard.stepBoard UpdateBoard.None bB)
 
-stepGame : Input -> (GameState, RemoteInput) -> (GameState, RemoteInput)
-stepGame gameInput (state, _) =
+secondsPerStateSync : Time
+secondsPerStateSync = 1.0
+
+stepGame : Input -> (GameState, RemoteInput, Time) -> (GameState, RemoteInput, Time)
+stepGame gameInput (state, _, tSinceLastSync) =
   case state of
     StartScreen -> case gameInput of
                      Remote (Ready rng) -> (PlayScreen
                                               (mkInitialBoardState rng 4)
                                               (mkInitialBoardState rng 4),
-                                            RemoteNone)
-                     otherwise -> (StartScreen, RemoteNone)
+                                            RemoteNone,
+                                            0.0)
+                     otherwise -> (StartScreen, RemoteNone, 0.0)
     PlayScreen boardStateA boardStateB ->
       if playerHasLost boardStateA.board || gameInput == Remote GameOver
-      then (EndScreen, GameOver)
-      else let (inputA, inputB) = inputToBoardInputs gameInput
-           in  (PlayScreen (UpdateBoard.stepBoard inputA boardStateA)
-                           (UpdateBoard.stepBoard inputB boardStateB),
-                case gameInput of
-                  Local k -> RemoteKey k
-                  otherwise -> RemoteNone)
+      then (EndScreen, GameOver, 0.0)
+      else let (newBoardA, newBoardB) = inputToNewBoards gameInput (boardStateA, boardStateB)
+               (remoteOut, newT) = if tSinceLastSync > secondsPerStateSync
+                                   then (SyncState newBoardA, 0.0)
+                                   else let t = tSinceLastSync + inSeconds newBoardA.dtOld
+                                        in  case gameInput of
+                                              Local k -> (RemoteKey k, t)
+                                              otherwise -> (RemoteNone, t)
+           in  (PlayScreen newBoardA newBoardB, remoteOut, newT)
     EndScreen -> case gameInput of
                    Remote (Ready rng) -> (PlayScreen
                                             (mkInitialBoardState rng 4)
                                             (mkInitialBoardState rng 4),
-                                          RemoteNone)
-                   otherwise -> (EndScreen, RemoteNone)
+                                          RemoteNone,
+                                          0.0)
+                   otherwise -> (EndScreen, RemoteNone, 0.0)
 
 mkInitialBoardState : RandSeed -> Int -> BoardState
 mkInitialBoardState seed maxInitColHeight =

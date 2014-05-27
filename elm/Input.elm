@@ -3,7 +3,8 @@ module Input where
 import Keyboard
 import Json (..)
 import WebSocket
-import Board (RandSeed)
+import Board (RandSeed, BoardState)
+import PortableBoard
 
 onUp : Signal Bool -> Signal ()
 onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
@@ -50,7 +51,11 @@ jsonToKeyInput (Number x) = case x of
                               4 -> DownArrow
                               5 -> Spacebar
 
-data RemoteInput = Ready RandSeed | GameOver | RemoteKey KeyInput | RemoteNone
+data RemoteInput = Ready RandSeed |
+                   GameOver |
+                   RemoteKey KeyInput |
+                   RemoteNone |
+                   SyncState BoardState
 
 remoteInputToJson : RemoteInput -> Value
 remoteInputToJson i = case i of
@@ -58,6 +63,7 @@ remoteInputToJson i = case i of
                         GameOver -> Array [Number 1]
                         RemoteKey k -> Array [Number 2, keyInputToJson k]
                         RemoteNone -> Array [Number 3]
+                        SyncState s -> Array [Number 4, PortableBoard.stateToJson s]
 
 jsonToRemoteInput : Value -> RemoteInput
 jsonToRemoteInput (Array (Number x :: xs)) = case x of
@@ -67,6 +73,8 @@ jsonToRemoteInput (Array (Number x :: xs)) = case x of
                                                2 -> let (k :: []) = xs
                                                     in  RemoteKey <| jsonToKeyInput k
                                                3 -> RemoteNone
+                                               4 -> let (s :: []) = xs
+                                                    in  SyncState <| PortableBoard.jsonToState s
 
 remoteInputToString : RemoteInput -> String
 remoteInputToString i = toString "" <| remoteInputToJson i

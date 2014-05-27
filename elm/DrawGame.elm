@@ -2,7 +2,6 @@ module DrawGame where
 
 import Board (..)
 import GameState (..)
-import Debug
 import Dict
 
 areaW = 800

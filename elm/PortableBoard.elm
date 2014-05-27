@@ -2,7 +2,6 @@ module PortableBoard where
 
 import Board (..)
 import Json (..)
-import Input (..)
 
 tileToJson : Maybe Tile -> Value
 tileToJson mt = case mt of
@@ -61,39 +60,3 @@ jsonToState (Array (boardJson :: cursorJson :: (Number scroll) :: [])) =
    globalScroll = scroll,
    rng = 0,
    dtOld = 0}
-
-
-stateToString : BoardState -> String
-stateToString s = toString "" <| stateToJson s
-
-stringToState : String -> Maybe BoardState
-stringToState str = liftMaybe jsonToState <| fromString str
-
-inputToJson : Input -> Value
-inputToJson i = case i of
-                  None -> Array [Number 0]
-                  LeftArrow -> Array [Number 1]
-                  RightArrow -> Array [Number 2]
-                  UpArrow -> Array [Number 3]
-                  DownArrow -> Array [Number 4]
-                  Spacebar -> Array [Number 5]
-                  NewTimeStep t -> Array [Number 6, Number t]
-
-jsonToInput : Value -> Input
-jsonToInput (Array ((Number x) :: xs)) = case x of
-                                  0 -> None
-                                  1 -> LeftArrow
-                                  2 -> RightArrow
-                                  3 -> UpArrow
-                                  4 -> DownArrow
-                                  5 -> Spacebar
-                                  6 -> let (Number t :: []) = xs
-                                       in  NewTimeStep t
-
-inputToString : Input -> String
-inputToString i = toString "" <| inputToJson i
-
-stringToInput : String -> Input
-stringToInput str = case fromString str of
-                      Just jsonV -> jsonToInput jsonV
-                      Nothing -> None
