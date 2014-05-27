@@ -52,8 +52,7 @@ serveLoop state which = flip finally (disconnect state which) $ forever $ do
 
 tryConnect :: WS.PendingConnection -> ServerState -> IO (ServerState, Maybe WhichConn)
 tryConnect pending s = let service = WS.pendingRequest pending
-                       in  print (unpack $ WS.requestPath service) >>
-                           if (unpack $ WS.requestPath service) == "/recv"
+                       in  if (unpack $ WS.requestPath service) == "/recv"
                            then case s of
                                   ((fca, Nothing), cb) -> do
                                     liftIO $ print "to conn a"

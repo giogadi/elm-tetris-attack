@@ -51,12 +51,15 @@ jsonToCursor : Value -> (Int, Int)
 jsonToCursor (Array (Number x :: Number y :: [])) = (round x, round y)
 
 stateToJson : BoardState -> Value
-stateToJson s = Array [boardToJson s.board, cursorToJson s.cursorIdx, Number s.globalScroll]
+stateToJson s = Array [boardToJson s.board,
+                       cursorToJson s.cursorIdx,
+                       Number s.globalScroll,
+                       Number <| toFloat s.rng]
 
 jsonToState : Value -> BoardState
-jsonToState (Array (boardJson :: cursorJson :: (Number scroll) :: [])) =
+jsonToState (Array (boardJson :: cursorJson :: (Number scroll) :: (Number seed) :: [])) =
   {board = jsonToBoard boardJson,
    cursorIdx = jsonToCursor cursorJson,
    globalScroll = scroll,
-   rng = 0,
+   rng = round seed,
    dtOld = 0}
