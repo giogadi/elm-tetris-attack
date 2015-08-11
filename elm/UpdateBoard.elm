@@ -2,8 +2,10 @@ module UpdateBoard where
 
 import Board (..)
 import Keyboard
-import Pseudorandom
+import List (..)
+import Random
 import Debug
+import Time (..)
 
 switchingTimeInSeconds = 0.25
 switchingSpeed = 1.0 / switchingTimeInSeconds
@@ -40,7 +42,7 @@ updateTile timeStep maybeTile = let dt = timeStep in -- for easy time compressio
                      else Nothing
                    whatever -> Just <| Debug.log "updateTile:" whatever
 
-updateColumn : Time -> [Maybe Tile] -> [Maybe Tile]
+updateColumn : Time -> List (Maybe Tile) -> List (Maybe Tile)
 updateColumn dt = map <| updateTile dt
 
 updateBoard : Time -> Board -> Board
@@ -92,7 +94,7 @@ swapTiles b (x,y) = let left = getTileAt b (x,y)
                         else b
 
 -- TODO: look into why some "fells" are getting through here
-updateFallColumn : [Maybe Tile] -> [Maybe Tile]
+updateFallColumn : List (Maybe Tile) -> List (Maybe Tile)
 updateFallColumn c =
   let go ts falling proc =
         case ts of
@@ -120,7 +122,7 @@ updateFallColumn c =
 updateFalls : Board -> Board
 updateFalls = map updateFallColumn
 
-updateMatchesInList : [Maybe Tile] -> [Maybe Tile]
+updateMatchesInList : List (Maybe Tile) -> List (Maybe Tile)
 updateMatchesInList tileList =
   let match stack numMatches =
         case numMatches of
@@ -151,7 +153,7 @@ combineMatches =
                        (Just (c, _), Just (c, Matching t)) -> Just (c, Matching t)
                        (t, t) -> t
                        -- _ -> error
-  in  zipWith (zipWith tileOr)
+  in  map2 (map2 tileOr)
 
 -- Does not update matches for 0th row because that one is still coming up from below
 updateMatches : Board -> Board
@@ -159,14 +161,16 @@ updateMatches b = let subBoard = map tail b
                       columnMatched = map updateMatchesInList subBoard
                       rowMatched = transpose <| map updateMatchesInList <| transpose subBoard
                       allMatched = combineMatches columnMatched rowMatched
-                  in  zipWith (::) (map head b) allMatched
+                  in  map2 (::) (map head b) allMatched
 
-scrollBoard : Board -> Int -> (Board, Int)
-scrollBoard b rng = let (randInts, rng') = Pseudorandom.randomRange (0,numColors-1) boardColumns <| rng
-                        tailless = map (take (boardRows - 1)) b
-                    in  (zipWith (::) (map intToTile randInts) tailless, rng')
+scrollBoard : Board -> Random.Seed -> (Board, Random.Seed)
+scrollBoard b seed = let tileRng = Random.int 0 (numColors - 1)
+                         listRng = Random.list boardColumns tileRng
+                         (randInts, seed') = Random.generate listRng seed
+                         tailless = map (take (boardRows - 1)) b
+                     in  (map2 (::) (map intToTile randInts) tailless, seed')
 
-data GameInput = None |
+type GameInput = None |
                  CursorLeft |
                  CursorRight |
                  CursorDown |

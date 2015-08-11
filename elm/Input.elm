@@ -1,20 +1,23 @@
 module Input where
 
 import Keyboard
+import List
+import Signal (..)
+import Time (..)
 
 onUp : Signal Bool -> Signal ()
-onUp = lift (\_ -> ()) . keepIf id False . dropRepeats
+onUp = map (\_ -> ()) << keepIf identity False << dropRepeats
 
 onDown : Signal Bool -> Signal ()
-onDown =  lift (\_ -> ()) . keepIf not False . dropRepeats
+onDown =  map (\_ -> ()) << keepIf not False << dropRepeats
 
 onPressed : Keyboard.KeyCode -> Signal ()
-onPressed = onUp . Keyboard.isDown
+onPressed = onUp << Keyboard.isDown
 
 onReleased : Keyboard.KeyCode -> Signal ()
-onReleased = onDown . Keyboard.isDown
+onReleased = onDown << Keyboard.isDown
 
-data Input = None |
+type Input = None |
              LeftArrow |
              RightArrow |
              UpArrow |
@@ -26,7 +29,9 @@ keyPressed : Keyboard.KeyCode -> Input -> Signal Input
 keyPressed key action = merge (constant None) <| always action <~ onPressed key
 
 input : Signal Input
-input = let keyPressInput = merges <| zipWith keyPressed
-                                        [37, 39, 40, 38, 32]
-                                        [LeftArrow, RightArrow, DownArrow, UpArrow, Spacebar]
-        in  merge keyPressInput <| NewTimeStep <~ fps 60
+input = let keyPressInput =
+              mergeMany <| List.map2 keyPressed
+                             [37, 39, 40, 38, 32]
+                             [LeftArrow, RightArrow, DownArrow, UpArrow, Spacebar]
+        --in  merge keyPressInput <| NewTimeStep <~ fps 60
+        in  merge (NewTimeStep <~ fps 60) keyPressInput

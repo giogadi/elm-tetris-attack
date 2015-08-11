@@ -1,49 +1,55 @@
 module Board where
 
+import Time (..)
+import List (..)
+import Random
+
 boardRows = 12
 boardColumns = 7
 
-type ContinuousPosition = Float
-type ContinuousSpeed = Float
+type alias ContinuousPosition = Float
+type alias ContinuousSpeed = Float
 
 
-type TileColor = Int
+type alias TileColor = Int
 
 numColors = 6
 
-data State = Stationary |
+type State = Stationary |
              SwitchingLeft ContinuousPosition |
              SwitchingRight ContinuousPosition |
              Falling ContinuousPosition ContinuousSpeed |
              Fell ContinuousPosition ContinuousSpeed |
              Matching Float
-type Tile = (TileColor, State)
+type alias Tile = (TileColor, State)
 
 mkTile : TileColor -> Tile
 mkTile c = (c, Stationary)
 
-type Board = [[Maybe Tile]]
+type alias Board = List (List (Maybe Tile))
 
-type BoardState = { board:Board, cursorIdx:(Int,Int), globalScroll:Float, rng:Int, dtOld:Time }
+type alias BoardState = { board:Board, cursorIdx:(Int,Int), globalScroll:Float, rng:Random.Seed, dtOld:Time }
 
-mkEmptyColumn : [Maybe Tile]
+mkEmptyColumn : List (Maybe Tile)
 mkEmptyColumn = repeat boardRows Nothing
 
 mkEmptyBoard : Board
 mkEmptyBoard = repeat boardColumns <| mkEmptyColumn
 
-generateColumnIndices : Int -> [Maybe Tile] -> [(Maybe Tile, (Int, Int))]
-generateColumnIndices column tiles = zip tiles (zip (repeat boardRows column) [0..boardRows-1])
+generateColumnIndices : Int -> List (Maybe Tile) -> List (Maybe Tile, (Int, Int))
+generateColumnIndices column tiles =
+  map2 (,) tiles (map2 (,) (repeat boardRows column) [0..boardRows-1])
 
-generateBoardIndices : Board -> [(Maybe Tile, (Int, Int))]
-generateBoardIndices = concat . zipWith generateColumnIndices [0..boardColumns-1]
+generateBoardIndices : Board -> List (Maybe Tile, (Int, Int))
+generateBoardIndices =
+  concat << map2 generateColumnIndices [0..boardColumns-1]
 
-listAtIdx : [a] -> Int -> a
+listAtIdx : List a -> Int -> a
 listAtIdx xs idx = case idx of
                      0 -> head xs
                      i -> listAtIdx (tail xs) (idx - 1)
 
-updateAtIdx : [a] -> Int -> a -> [a]
+updateAtIdx : List a -> Int -> a -> List a
 updateAtIdx xs idx x =
   let go (xh::xt) idx x proc = case idx of
                                  0 -> proc ++ (x :: xt)
@@ -56,7 +62,7 @@ getTileAt b (x,y) = listAtIdx (listAtIdx b x) y
 setTileAt : Board -> (Int, Int) -> Maybe Tile -> Board
 setTileAt b (x,y) t = updateAtIdx b x <| updateAtIdx (listAtIdx b x) y t
 
-transpose : [[a]] -> [[a]]
+transpose : List (List a) -> List (List a)
 transpose matrix = case matrix of
                      [] -> []
                      [] :: xss -> transpose xss
@@ -68,13 +74,16 @@ liftMaybe f m = case m of
                   Just x  -> Just <| f x
 
 intToTile : Int -> Maybe Tile
-intToTile = Just . mkTile
+intToTile = Just << mkTile
 
-columnFromRandomInts : [Int] -> [Maybe Tile]
+columnFromRandomInts : List Int -> List (Maybe Tile)
 columnFromRandomInts ints = map intToTile ints ++ repeat (boardRows - length ints) Nothing
 
-boardFromRandomInts : [[Int]] -> Board
+boardFromRandomInts : List (List Int) -> Board
 boardFromRandomInts ints = map columnFromRandomInts ints
 
 playerHasLost : Board -> Bool
-playerHasLost = any (isJust . (flip listAtIdx) (boardRows-1))
+playerHasLost = let isJust x = case x of
+                                 Just _ -> True
+                                 Nothing -> False
+                in  any (isJust << (flip listAtIdx) (boardRows - 1))
