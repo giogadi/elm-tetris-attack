@@ -2,14 +2,14 @@ module Input where
 
 import Keyboard
 import List
-import Signal (..)
-import Time (..)
+import Signal exposing (..)
+import Time exposing (..)
 
 onUp : Signal Bool -> Signal ()
-onUp = map (\_ -> ()) << keepIf identity False << dropRepeats
+onUp = map (\_ -> ()) << filter identity False << dropRepeats
 
 onDown : Signal Bool -> Signal ()
-onDown =  map (\_ -> ()) << keepIf not False << dropRepeats
+onDown =  map (\_ -> ()) << filter not False << dropRepeats
 
 onPressed : Keyboard.KeyCode -> Signal ()
 onPressed = onUp << Keyboard.isDown

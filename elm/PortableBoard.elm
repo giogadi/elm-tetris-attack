@@ -1,7 +1,7 @@
 module PortableBoard where
 
-import Board (..)
-import Json (..)
+import Board exposing (..)
+import Json exposing (..)
 
 tileToJson : Maybe Tile -> Value
 tileToJson mt = case mt of

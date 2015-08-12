@@ -1,11 +1,12 @@
 module UpdateBoard where
 
-import Board (..)
+import Board exposing (..)
 import Keyboard
-import List (..)
+import List exposing (..)
 import Random
 import Debug
-import Time (..)
+import Time exposing (..)
+import Util exposing (..)
 
 switchingTimeInSeconds = 0.25
 switchingSpeed = 1.0 / switchingTimeInSeconds
@@ -127,8 +128,8 @@ updateMatchesInList tileList =
   let match stack numMatches =
         case numMatches of
           0 -> stack
-          n -> case head stack of
-                 Just (c,_) -> Just (c, Matching 0.0) :: match (tail stack) (n-1)
+          n -> case badHead stack of
+                 Just (c,_) -> Just (c, Matching 0.0) :: match (badTail stack) (n-1)
                  -- _ -> error
       tryMatch stack numMatches = if numMatches >= 3
                                   then match stack numMatches
@@ -140,9 +141,9 @@ updateMatchesInList tileList =
               case newList of
                 [] -> go [Just (tc, Stationary)] 1 tl
                 Just (cn, Stationary) :: _  -> if tc == cn
-                                               then go (head ts :: newList) (numInARow+1) tl
-                                               else go (head ts :: tryMatch newList numInARow) 1 tl
-                _ -> go (head ts :: tryMatch newList numInARow) 1 tl
+                                               then go (badHead ts :: newList) (numInARow+1) tl
+                                               else go (badHead ts :: tryMatch newList numInARow) 1 tl
+                _ -> go (badHead ts :: tryMatch newList numInARow) 1 tl
             t :: tl -> go (t :: tryMatch newList numInARow) 0 tl
   in  reverse <| go [] 0 tileList
 
@@ -157,11 +158,11 @@ combineMatches =
 
 -- Does not update matches for 0th row because that one is still coming up from below
 updateMatches : Board -> Board
-updateMatches b = let subBoard = map tail b
+updateMatches b = let subBoard = map badTail b
                       columnMatched = map updateMatchesInList subBoard
                       rowMatched = transpose <| map updateMatchesInList <| transpose subBoard
                       allMatched = combineMatches columnMatched rowMatched
-                  in  map2 (::) (map head b) allMatched
+                  in  map2 (::) (map badHead b) allMatched
 
 scrollBoard : Board -> Random.Seed -> (Board, Random.Seed)
 scrollBoard b seed = let tileRng = Random.int 0 (numColors - 1)

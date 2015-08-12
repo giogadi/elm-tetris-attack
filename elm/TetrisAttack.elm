@@ -1,13 +1,13 @@
 module TetrisAttack where
 
-import Board (..)
--- import PortableBoard (..)
+import Board exposing (..)
+-- import PortableBoard exposing (..)
 import Window
-import GameState (..)
-import DrawGame (..)
+import GameState exposing (..)
+import DrawGame exposing (..)
 -- import WebSocket
-import Input (..)
-import Signal (..)
+import Input exposing (..)
+import Signal exposing (..)
 
 stateSignal : Signal GameState
 stateSignal = foldp stepGame StartScreen input

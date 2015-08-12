@@ -1,8 +1,9 @@
 module Board where
 
-import Time (..)
-import List (..)
+import List exposing (..)
 import Random
+import Time exposing (..)
+import Util exposing (..)
 
 boardRows = 12
 boardColumns = 7
@@ -46,8 +47,8 @@ generateBoardIndices =
 
 listAtIdx : List a -> Int -> a
 listAtIdx xs idx = case idx of
-                     0 -> head xs
-                     i -> listAtIdx (tail xs) (idx - 1)
+                     0 -> badHead xs
+                     i -> listAtIdx (badTail xs) (idx - 1)
 
 updateAtIdx : List a -> Int -> a -> List a
 updateAtIdx xs idx x =
@@ -66,7 +67,7 @@ transpose : List (List a) -> List (List a)
 transpose matrix = case matrix of
                      [] -> []
                      [] :: xss -> transpose xss
-                     (x :: xs) :: xss -> (x :: map head xss) :: transpose (xs :: map tail xss)
+                     (x :: xs) :: xss -> (x :: map badHead xss) :: transpose (xs :: map badTail xss)
 
 liftMaybe : (a -> b) -> Maybe a -> Maybe b
 liftMaybe f m = case m of

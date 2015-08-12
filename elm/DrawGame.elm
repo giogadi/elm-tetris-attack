@@ -1,16 +1,16 @@
 module DrawGame where
 
-import Board (..)
-import Color (..)
+import Board exposing (..)
+import Color exposing (..)
 import Debug
 import Dict
-import GameState (..)
-import Graphics.Collage (..)
-import Graphics.Element (..)
+import GameState exposing (..)
+import Graphics.Collage exposing (..)
+import Graphics.Element exposing (..)
 import List
-import Maybe (..)
-import Text (..)
-import Time (..)
+import Maybe exposing (..)
+import Text exposing (..)
+import Time exposing (..)
 
 areaW = 800
 areaH = 600
@@ -99,6 +99,6 @@ displayBoard (windowW, windowH) game =
 
 displayGame : (Int, Int) -> GameState -> Element
 displayGame windowDims state = case state of
-                                 StartScreen -> asText "Press space to start"
+                                 StartScreen -> show "Press space to start"
                                  PlayScreen s -> displayBoard windowDims s
-                                 EndScreen -> asText "YOUR BAD press space"
+                                 EndScreen -> show "YOUR BAD press space"

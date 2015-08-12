@@ -1,8 +1,8 @@
 module GameState where
 
-import Board (..)
-import Input (..)
-import List (..)
+import Board exposing (..)
+import Input exposing (..)
+import List exposing (..)
 import Random
 import UpdateBoard
 

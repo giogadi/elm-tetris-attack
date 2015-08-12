@@ -1,8 +1,8 @@
 module Slave where
 
-import Board (..)
-import DrawBoard (..)
-import PortableBoard (..)
+import Board exposing (..)
+import DrawBoard exposing (..)
+import PortableBoard exposing (..)
 import Window
 import WebSocket
 
