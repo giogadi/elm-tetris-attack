@@ -5,17 +5,17 @@ import List
 import Signal exposing (..)
 import Time exposing (..)
 
-onUp : Signal Bool -> Signal ()
-onUp = map (\_ -> ()) << filter identity False << dropRepeats
+onTrue : Signal Bool -> Signal ()
+onTrue = map (\_ -> ()) << filter identity False << dropRepeats
 
-onDown : Signal Bool -> Signal ()
-onDown =  map (\_ -> ()) << filter not False << dropRepeats
+onFalse : Signal Bool -> Signal ()
+onFalse = map (\_ -> ()) << filter not False << dropRepeats
 
 onPressed : Keyboard.KeyCode -> Signal ()
-onPressed = onUp << Keyboard.isDown
+onPressed = onTrue << Keyboard.isDown
 
 onReleased : Keyboard.KeyCode -> Signal ()
-onReleased = onDown << Keyboard.isDown
+onReleased = onFalse << Keyboard.isDown
 
 type Input = None |
              LeftArrow |
